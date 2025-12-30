@@ -26,7 +26,16 @@
       "Bash(git add:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd trip distance column and fix consumption calculations\n\n- Add Trip Distance column to fuel entries table\n- Fix km/L calculation to use tripDistance when available\n- Update backend vehicle stats to calculate total distance from trip distances\n- Update dashboard stats to use sum of trip distances\n- Downgrade Prisma to v5 for compatibility\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(gh repo create:*)",
-      "Bash(brew install:*)"
+      "Bash(brew install:*)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:cmw%2ADZN3mfy4xfa2jnh@db.bduouqexovqrggiiozrj.supabase.co:5432/postgres\" DIRECT_URL=\"postgresql://postgres:cmw%2ADZN3mfy4xfa2jnh@db.bduouqexovqrggiiozrj.supabase.co:5432/postgres\" npx prisma db push:*)",
+      "Bash(DATABASE_URL=\"postgresql://postgres.bduouqexovqrggiiozrj:cmw%2ADZN3mfy4xfa2jnh@aws-1-eu-west-3.pooler.supabase.com:6543/postgres\" DIRECT_URL=\"postgresql://postgres.bduouqexovqrggiiozrj:cmw%2ADZN3mfy4xfa2jnh@aws-1-eu-west-3.pooler.supabase.com:6543/postgres\" npx prisma:*)",
+      "Bash(DATABASE_URL=\"postgresql://postgres.bduouqexovqrggiiozrj:cmw%2ADZN3mfy4xfa2jnh@aws-1-eu-west-3.pooler.supabase.com:5432/postgres\" DIRECT_URL=\"postgresql://postgres.bduouqexovqrggiiozrj:cmw%2ADZN3mfy4xfa2jnh@aws-1-eu-west-3.pooler.supabase.com:5432/postgres\" npx prisma db push)",
+      "Bash(npx vercel:*)",
+      "Bash(npx vercel env rm:*)",
+      "Bash(npx vercel env add:*)",
+      "Bash(npx vercel env add DIRECT_URL production)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   }
 }
