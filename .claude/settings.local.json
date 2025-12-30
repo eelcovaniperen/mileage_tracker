@@ -35,7 +35,8 @@
       "Bash(npx vercel env add:*)",
       "Bash(npx vercel env add DIRECT_URL production)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(DATABASE_URL=\"postgresql://postgres.bduouqexovqrggiiozrj:cmw%2ADZN3mfy4xfa2jnh@aws-1-eu-west-3.pooler.supabase.com:5432/postgres\" DIRECT_URL=\"postgresql://postgres.bduouqexovqrggiiozrj:cmw%2ADZN3mfy4xfa2jnh@aws-1-eu-west-3.pooler.supabase.com:5432/postgres\" node:*)"
     ]
   }
 }
