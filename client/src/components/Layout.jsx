@@ -71,14 +71,21 @@ export default function Layout({ children }) {
             <div className="flex items-center space-x-4">
               {user ? (
                 <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-3">
+                  <Link
+                    to="/settings"
+                    className={`flex items-center space-x-3 group ${
+                      isActive('/settings')
+                        ? 'text-blue-400'
+                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-medium">
                       {(user.name || user.email)[0].toUpperCase()}
                     </div>
-                    <span className="text-sm text-[var(--text-secondary)] hidden sm:block">
+                    <span className="text-sm hidden sm:block">
                       {user.name || user.email}
                     </span>
-                  </div>
+                  </Link>
                   <button
                     onClick={handleLogout}
                     className="text-sm text-[var(--text-muted)] hover:text-[var(--danger)] transition-colors"

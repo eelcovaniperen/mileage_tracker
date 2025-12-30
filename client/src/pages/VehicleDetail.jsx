@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getVehicle, createFuelEntry, deleteFuelEntry } from '../api/client';
+import { getVehicle, createFuelEntry, updateFuelEntry, deleteFuelEntry, updateVehicle } from '../api/client';
 
 export default function VehicleDetail() {
   const { id } = useParams();
   const [vehicle, setVehicle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showEditVehicle, setShowEditVehicle] = useState(false);
+  const [editingEntry, setEditingEntry] = useState(null);
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     odometer: '',
@@ -19,6 +21,13 @@ export default function VehicleDetail() {
     pricePerLiter: '',
     tyres: ''
   });
+  const [vehicleFormData, setVehicleFormData] = useState({
+    name: '',
+    make: '',
+    model: '',
+    year: '',
+    initialOdometer: ''
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -30,6 +39,13 @@ export default function VehicleDetail() {
     try {
       const res = await getVehicle(id);
       setVehicle(res.data);
+      setVehicleFormData({
+        name: res.data.name || '',
+        make: res.data.make || '',
+        model: res.data.model || '',
+        year: res.data.year || '',
+        initialOdometer: res.data.initialOdometer || ''
+      });
     } catch (err) {
       console.error('Failed to load vehicle:', err);
     } finally {
@@ -42,10 +58,15 @@ export default function VehicleDetail() {
     setError('');
     setSaving(true);
     try {
-      await createFuelEntry({
-        ...formData,
-        vehicleId: id
-      });
+      if (editingEntry) {
+        await updateFuelEntry(editingEntry.id, formData);
+        setEditingEntry(null);
+      } else {
+        await createFuelEntry({
+          ...formData,
+          vehicleId: id
+        });
+      }
       setFormData({
         date: new Date().toISOString().split('T')[0],
         odometer: '',
@@ -61,10 +82,44 @@ export default function VehicleDetail() {
       setShowForm(false);
       loadVehicle();
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to add entry');
+      setError(err.response?.data?.error || 'Failed to save entry');
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleEditEntry = (entry) => {
+    setEditingEntry(entry);
+    setFormData({
+      date: entry.date.split('T')[0],
+      odometer: entry.odometer,
+      fuelAmount: entry.fuelAmount,
+      cost: entry.cost,
+      fullTank: entry.fullTank,
+      notes: entry.notes || '',
+      gasStation: entry.gasStation || '',
+      tripDistance: entry.tripDistance || '',
+      pricePerLiter: entry.pricePerLiter || '',
+      tyres: entry.tyres || ''
+    });
+    setShowForm(true);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingEntry(null);
+    setFormData({
+      date: new Date().toISOString().split('T')[0],
+      odometer: '',
+      fuelAmount: '',
+      cost: '',
+      fullTank: true,
+      notes: '',
+      gasStation: '',
+      tripDistance: '',
+      pricePerLiter: '',
+      tyres: ''
+    });
+    setShowForm(false);
   };
 
   const handleDelete = async (entryId) => {
@@ -74,6 +129,20 @@ export default function VehicleDetail() {
       loadVehicle();
     } catch (err) {
       console.error('Failed to delete entry:', err);
+    }
+  };
+
+  const handleUpdateVehicle = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await updateVehicle(id, vehicleFormData);
+      setShowEditVehicle(false);
+      loadVehicle();
+    } catch (err) {
+      console.error('Failed to update vehicle:', err);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -123,14 +192,32 @@ export default function VehicleDetail() {
             </svg>
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-[var(--text-primary)]">{vehicle.name}</h1>
+            <div className="flex items-center space-x-2">
+              <h1 className="text-3xl font-bold text-[var(--text-primary)]">{vehicle.name}</h1>
+              <button
+                onClick={() => setShowEditVehicle(!showEditVehicle)}
+                className="p-2 text-[var(--text-muted)] hover:text-blue-400 transition-colors"
+                title="Edit vehicle"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </button>
+            </div>
             <p className="text-[var(--text-secondary)]">
               {[vehicle.make, vehicle.model, vehicle.year].filter(Boolean).join(' ') || 'No details'}
             </p>
           </div>
         </div>
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            if (showForm && !editingEntry) {
+              setShowForm(false);
+            } else {
+              handleCancelEdit();
+              setShowForm(true);
+            }
+          }}
           className={showForm ? 'btn-secondary' : 'btn-primary'}
         >
           {showForm ? (
@@ -150,6 +237,69 @@ export default function VehicleDetail() {
           )}
         </button>
       </div>
+
+      {/* Edit Vehicle Form */}
+      {showEditVehicle && (
+        <div className="glass-card p-6 mb-8 animate-fade-in">
+          <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Edit Vehicle</h2>
+          <form onSubmit={handleUpdateVehicle} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div>
+              <label className="input-label">Vehicle Name *</label>
+              <input
+                type="text"
+                value={vehicleFormData.name}
+                onChange={(e) => setVehicleFormData({ ...vehicleFormData, name: e.target.value })}
+                className="input-field"
+                required
+              />
+            </div>
+            <div>
+              <label className="input-label">Make</label>
+              <input
+                type="text"
+                value={vehicleFormData.make}
+                onChange={(e) => setVehicleFormData({ ...vehicleFormData, make: e.target.value })}
+                className="input-field"
+              />
+            </div>
+            <div>
+              <label className="input-label">Model</label>
+              <input
+                type="text"
+                value={vehicleFormData.model}
+                onChange={(e) => setVehicleFormData({ ...vehicleFormData, model: e.target.value })}
+                className="input-field"
+              />
+            </div>
+            <div>
+              <label className="input-label">Year</label>
+              <input
+                type="number"
+                value={vehicleFormData.year}
+                onChange={(e) => setVehicleFormData({ ...vehicleFormData, year: e.target.value })}
+                className="input-field"
+              />
+            </div>
+            <div>
+              <label className="input-label">Initial Odometer (km)</label>
+              <input
+                type="number"
+                value={vehicleFormData.initialOdometer}
+                onChange={(e) => setVehicleFormData({ ...vehicleFormData, initialOdometer: e.target.value })}
+                className="input-field"
+              />
+            </div>
+            <div className="flex items-end space-x-2">
+              <button type="button" onClick={() => setShowEditVehicle(false)} className="btn-secondary flex-1">
+                Cancel
+              </button>
+              <button type="submit" disabled={saving} className="btn-primary flex-1">
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
@@ -175,10 +325,12 @@ export default function VehicleDetail() {
         </div>
       </div>
 
-      {/* Add Entry Form */}
+      {/* Add/Edit Entry Form */}
       {showForm && (
         <div className="glass-card p-6 mb-8 animate-fade-in">
-          <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Add Fuel Entry</h2>
+          <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6">
+            {editingEntry ? 'Edit Fuel Entry' : 'Add Fuel Entry'}
+          </h2>
           {error && (
             <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
               <div className="flex items-center space-x-2">
@@ -312,7 +464,7 @@ export default function VehicleDetail() {
                     <span>Saving...</span>
                   </>
                 ) : (
-                  <span>Save Entry</span>
+                  <span>{editingEntry ? 'Update Entry' : 'Save Entry'}</span>
                 )}
               </button>
             </div>
@@ -358,7 +510,6 @@ export default function VehicleDetail() {
                 [...vehicle.fuelEntries].reverse().map((entry, index, arr) => {
                   const prevEntry = arr[index + 1];
                   let consumption = null;
-                  // Use tripDistance if available, otherwise calculate from odometer
                   if (entry.tripDistance && entry.tripDistance > 0 && entry.fuelAmount > 0) {
                     consumption = entry.tripDistance / entry.fuelAmount;
                   } else if (prevEntry && entry.fullTank) {
@@ -387,15 +538,26 @@ export default function VehicleDetail() {
                       <td className="text-[var(--text-muted)]">{entry.pricePerLiter ? `€${entry.pricePerLiter.toFixed(3)}` : '-'}</td>
                       <td className="text-[var(--text-muted)]">{entry.tyres || '-'}</td>
                       <td>
-                        <button
-                          onClick={() => handleDelete(entry.id)}
-                          className="btn-danger p-2"
-                          title="Delete entry"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
+                        <div className="flex space-x-1">
+                          <button
+                            onClick={() => handleEditEntry(entry)}
+                            className="p-2 text-[var(--text-muted)] hover:text-blue-400 transition-colors"
+                            title="Edit entry"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleDelete(entry.id)}
+                            className="btn-danger p-2"
+                            title="Delete entry"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

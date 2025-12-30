@@ -126,4 +126,69 @@ router.get('/me', authMiddleware, async (req, res) => {
   }
 });
 
+// Update profile
+router.put('/profile', authMiddleware, async (req, res) => {
+  try {
+    const { name, email, currentPassword, newPassword } = req.body;
+
+    // Get the current user
+    const user = await req.prisma.user.findUnique({
+      where: { id: req.userId }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Build update data
+    const updateData = {};
+
+    // Update name if provided
+    if (name !== undefined) {
+      updateData.name = name;
+    }
+
+    // Update email if provided and different
+    if (email && email !== user.email) {
+      const existingUser = await req.prisma.user.findUnique({
+        where: { email }
+      });
+      if (existingUser) {
+        return res.status(400).json({ error: 'Email already in use' });
+      }
+      updateData.email = email;
+    }
+
+    // Update password if provided
+    if (newPassword) {
+      if (!currentPassword) {
+        return res.status(400).json({ error: 'Current password is required to change password' });
+      }
+
+      const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+      if (!isValidPassword) {
+        return res.status(400).json({ error: 'Current password is incorrect' });
+      }
+
+      updateData.password = await bcrypt.hash(newPassword, 10);
+    }
+
+    // Update user
+    const updatedUser = await req.prisma.user.update({
+      where: { id: req.userId },
+      data: updateData,
+      select: {
+        id: true,
+        email: true,
+        name: true
+      }
+    });
+
+    res.json(updatedUser);
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
 module.exports = router;
