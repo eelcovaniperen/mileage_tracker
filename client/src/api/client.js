@@ -1,0 +1,49 @@
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: '/api'
+});
+
+// Add auth token to requests
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Handle auth errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Auth
+export const register = (data) => api.post('/auth/register', data);
+export const login = (data) => api.post('/auth/login', data);
+export const getMe = () => api.get('/auth/me');
+
+// Vehicles
+export const getVehicles = () => api.get('/vehicles');
+export const getVehicle = (id) => api.get(`/vehicles/${id}`);
+export const createVehicle = (data) => api.post('/vehicles', data);
+export const updateVehicle = (id, data) => api.put(`/vehicles/${id}`, data);
+export const deleteVehicle = (id) => api.delete(`/vehicles/${id}`);
+
+// Fuel Entries
+export const getFuelEntries = (vehicleId) => api.get(`/fuel-entries/vehicle/${vehicleId}`);
+export const createFuelEntry = (data) => api.post('/fuel-entries', data);
+export const updateFuelEntry = (id, data) => api.put(`/fuel-entries/${id}`, data);
+export const deleteFuelEntry = (id) => api.delete(`/fuel-entries/${id}`);
+
+// Dashboard
+export const getDashboardStats = () => api.get('/fuel-entries/dashboard/stats');
+
+export default api;
