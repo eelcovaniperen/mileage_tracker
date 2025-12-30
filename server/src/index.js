@@ -6,6 +6,7 @@ const { PrismaClient } = require('@prisma/client');
 const authRoutes = require('./routes/auth');
 const vehicleRoutes = require('./routes/vehicles');
 const fuelEntryRoutes = require('./routes/fuelEntries');
+const dashboardRoutes = require('./routes/dashboard');
 
 const app = express();
 const prisma = new PrismaClient();
@@ -25,6 +26,7 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/fuel-entries', fuelEntryRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
