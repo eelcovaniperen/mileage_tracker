@@ -44,6 +44,6 @@ export const updateFuelEntry = (id, data) => api.put(`/fuel-entries/${id}`, data
 export const deleteFuelEntry = (id) => api.delete(`/fuel-entries/${id}`);
 
 // Dashboard
-export const getDashboardStats = () => api.get('/fuel-entries/dashboard/stats');
+export const getDashboardStats = () => api.get('/dashboard/stats');
 
 export default api;
