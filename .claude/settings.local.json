@@ -36,7 +36,8 @@
       "Bash(npx vercel env add DIRECT_URL production)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(DATABASE_URL=\"postgresql://postgres.bduouqexovqrggiiozrj:cmw%2ADZN3mfy4xfa2jnh@aws-1-eu-west-3.pooler.supabase.com:5432/postgres\" DIRECT_URL=\"postgresql://postgres.bduouqexovqrggiiozrj:cmw%2ADZN3mfy4xfa2jnh@aws-1-eu-west-3.pooler.supabase.com:5432/postgres\" node:*)"
+      "Bash(DATABASE_URL=\"postgresql://postgres.bduouqexovqrggiiozrj:cmw%2ADZN3mfy4xfa2jnh@aws-1-eu-west-3.pooler.supabase.com:5432/postgres\" DIRECT_URL=\"postgresql://postgres.bduouqexovqrggiiozrj:cmw%2ADZN3mfy4xfa2jnh@aws-1-eu-west-3.pooler.supabase.com:5432/postgres\" node:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWpzczg5bzQwMDAwdmxzeTBtMm1kazdkIiwiaWF0IjoxNzY3MTExNDk4LCJleHAiOjE3Njc3MTYyOTh9.Aovh2_XSmfQ8tPVvq4LzR5lYE7WlmQO-dVf6DxKhoSg\")"
     ]
   }
 }
