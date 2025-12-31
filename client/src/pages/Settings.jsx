@@ -83,48 +83,53 @@ export default function Settings() {
   };
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-[var(--text-primary)]">Settings</h1>
+    <div className="max-w-2xl">
+      {/* Header */}
+      <div className="mb-10">
+        <h1 className="page-header">Settings</h1>
+        <p className="page-subtitle">Manage your account and preferences</p>
+      </div>
 
       {message.text && (
-        <div className={`p-4 rounded-lg ${
+        <div className={`mb-6 p-3 rounded-lg text-sm flex items-center gap-2 animate-fade-in ${
           message.type === 'success'
-            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-            : 'bg-red-500/20 text-red-400 border border-red-500/30'
+            ? 'bg-[var(--success-muted)] text-[var(--success)] border border-[var(--success)]/20'
+            : 'bg-[var(--danger-muted)] text-[var(--danger)] border border-[var(--danger)]/20'
         }`}>
+          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {message.type === 'success' ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            )}
+          </svg>
           {message.text}
         </div>
       )}
 
       {/* Profile Settings */}
-      <div className="glass-card p-6">
-        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
-          Profile Information
-        </h2>
+      <div className="glass-card p-6 mb-6">
+        <h2 className="section-header mb-6">Profile Information</h2>
         <form onSubmit={handleProfileSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-2">
-              Name
-            </label>
+            <label className="input-label">Name</label>
             <input
               type="text"
               name="name"
               value={profileData.name}
               onChange={handleProfileChange}
-              className="w-full px-4 py-2 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-primary)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              className="input-field"
               placeholder="Your name"
             />
           </div>
           <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-2">
-              Email
-            </label>
+            <label className="input-label">Email</label>
             <input
               type="email"
               name="email"
               value={profileData.email}
               onChange={handleProfileChange}
-              className="w-full px-4 py-2 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-primary)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              className="input-field"
               placeholder="your@email.com"
               required
             />
@@ -132,7 +137,7 @@ export default function Settings() {
           <button
             type="submit"
             disabled={loading}
-            className="btn-primary py-2 px-4"
+            className="btn-primary"
           >
             {loading ? 'Saving...' : 'Save Profile'}
           </button>
@@ -141,48 +146,40 @@ export default function Settings() {
 
       {/* Password Settings */}
       <div className="glass-card p-6">
-        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
-          Change Password
-        </h2>
+        <h2 className="section-header mb-6">Change Password</h2>
         <form onSubmit={handlePasswordSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-2">
-              Current Password
-            </label>
+            <label className="input-label">Current Password</label>
             <input
               type="password"
               name="currentPassword"
               value={passwordData.currentPassword}
               onChange={handlePasswordChange}
-              className="w-full px-4 py-2 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-primary)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              className="input-field"
               placeholder="Enter current password"
               required
             />
           </div>
           <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-2">
-              New Password
-            </label>
+            <label className="input-label">New Password</label>
             <input
               type="password"
               name="newPassword"
               value={passwordData.newPassword}
               onChange={handlePasswordChange}
-              className="w-full px-4 py-2 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-primary)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              className="input-field"
               placeholder="Enter new password"
               required
             />
           </div>
           <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-2">
-              Confirm New Password
-            </label>
+            <label className="input-label">Confirm New Password</label>
             <input
               type="password"
               name="confirmPassword"
               value={passwordData.confirmPassword}
               onChange={handlePasswordChange}
-              className="w-full px-4 py-2 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-primary)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              className="input-field"
               placeholder="Confirm new password"
               required
             />
@@ -190,7 +187,7 @@ export default function Settings() {
           <button
             type="submit"
             disabled={loading}
-            className="btn-primary py-2 px-4"
+            className="btn-primary"
           >
             {loading ? 'Changing...' : 'Change Password'}
           </button>
