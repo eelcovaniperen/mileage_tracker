@@ -113,7 +113,7 @@ export default function Dashboard() {
           {stats.t12m && stats.t12m.totalDistance > 0 && (
             <div className="mb-6">
               <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold mb-3">Trailing 12 Months</p>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <KPICard
                   label="T12M Distance"
                   value={stats.t12m.totalDistance.toLocaleString()}
@@ -122,17 +122,24 @@ export default function Dashboard() {
                   highlight
                 />
                 <KPICard
+                  label="T12M Total Spend"
+                  value={stats.t12m.totalCost.toFixed(0)}
+                  unit="EUR"
+                  delay={40}
+                  highlight
+                />
+                <KPICard
                   label="T12M Avg Consumption"
                   value={stats.t12m.avgConsumption.toFixed(1)}
                   unit="km/L"
-                  delay={40}
+                  delay={80}
                   highlight
                 />
                 <KPICard
                   label="T12M Cost/km"
                   value={stats.t12m.costPerKm.toFixed(3)}
                   unit="EUR"
-                  delay={80}
+                  delay={120}
                   highlight
                 />
               </div>
@@ -368,17 +375,23 @@ export default function Dashboard() {
                       </svg>
                     </div>
                     {/* Vehicle Stats */}
-                    <div className="flex gap-4 text-xs pt-3 border-t border-[var(--border-color)]">
+                    <div className="grid grid-cols-3 gap-2 text-xs pt-3 border-t border-[var(--border-color)]">
                       <div>
-                        <span className="text-[var(--text-muted)]">Avg: </span>
+                        <span className="text-[var(--text-muted)] block">Distance</span>
+                        <span className="text-mono text-[var(--text-primary)] font-medium">
+                          {vStats.totalDistance > 0 ? `${vStats.totalDistance.toLocaleString()} km` : '-'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[var(--text-muted)] block">Avg</span>
                         <span className="text-mono text-[var(--text-primary)] font-medium">
                           {vStats.avgConsumption > 0 ? `${vStats.avgConsumption.toFixed(1)} km/L` : '-'}
                         </span>
                       </div>
                       <div>
-                        <span className="text-[var(--text-muted)]">Cost/km: </span>
+                        <span className="text-[var(--text-muted)] block">Cost/km</span>
                         <span className="text-mono text-[var(--text-primary)] font-medium">
-                          {vStats.costPerKm > 0 ? `${vStats.costPerKm.toFixed(3)} EUR` : '-'}
+                          {vStats.costPerKm > 0 ? `${vStats.costPerKm.toFixed(3)}` : '-'}
                         </span>
                       </div>
                     </div>

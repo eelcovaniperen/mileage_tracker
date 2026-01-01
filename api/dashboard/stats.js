@@ -49,6 +49,7 @@ module.exports = async function handler(req, res) {
       if (entries.length === 0) {
         vehicleStats.push({
           id: vehicle.id,
+          totalDistance: 0,
           avgConsumption: 0,
           costPerKm: 0
         });
@@ -77,6 +78,7 @@ module.exports = async function handler(req, res) {
       const vehicleCostPerKm = vehicleDistance > 0 ? vehicleCost / vehicleDistance : 0;
       vehicleStats.push({
         id: vehicle.id,
+        totalDistance: Math.round(vehicleDistance),
         avgConsumption: Math.round(vehicleAvgConsumption * 100) / 100,
         costPerKm: Math.round(vehicleCostPerKm * 1000) / 1000
       });
@@ -125,31 +127,54 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    // Calculate monthly consumption and cost per km for T12M trend chart
+    // Calculate monthly stats
     const monthlyTrend = Object.entries(monthlyData)
       .map(([month, data]) => {
-        // Calculate distance from entries if tripDistance not available
         let distance = data.distance;
         if (distance === 0 && data.entries.length >= 2) {
           const sortedEntries = data.entries.sort((a, b) => a.odometer - b.odometer);
           distance = sortedEntries[sortedEntries.length - 1].odometer - sortedEntries[0].odometer;
         }
 
-        const avgConsumption = data.fuel > 0 && distance > 0 ? distance / data.fuel : 0;
-        const costPerKm = distance > 0 ? data.cost / distance : 0;
-
         return {
           month,
           fuel: Math.round(data.fuel * 100) / 100,
           cost: Math.round(data.cost * 100) / 100,
-          avgConsumption: Math.round(avgConsumption * 100) / 100,
-          costPerKm: Math.round(costPerKm * 1000) / 1000
+          distance: Math.round(distance)
         };
       })
       .sort((a, b) => a.month.localeCompare(b.month));
 
-    // Filter to last 12 months for T12M trend
-    const t12mMonths = monthlyTrend.slice(-12);
+    // Calculate rolling T12M averages for each month
+    // For each month, calculate the trailing 12 months' totals ending at that month
+    const t12mRollingTrend = [];
+    for (let i = 0; i < monthlyTrend.length; i++) {
+      const currentMonth = monthlyTrend[i].month;
+
+      // Get the 12 months ending at this month (inclusive)
+      const startIndex = Math.max(0, i - 11);
+      const monthsInWindow = monthlyTrend.slice(startIndex, i + 1);
+
+      const windowFuel = monthsInWindow.reduce((sum, m) => sum + m.fuel, 0);
+      const windowCost = monthsInWindow.reduce((sum, m) => sum + m.cost, 0);
+      const windowDistance = monthsInWindow.reduce((sum, m) => sum + m.distance, 0);
+
+      const avgConsumption = windowFuel > 0 && windowDistance > 0 ? windowDistance / windowFuel : 0;
+      const costPerKm = windowDistance > 0 ? windowCost / windowDistance : 0;
+
+      t12mRollingTrend.push({
+        month: currentMonth,
+        fuel: Math.round(windowFuel * 100) / 100,
+        cost: Math.round(windowCost * 100) / 100,
+        distance: windowDistance,
+        avgConsumption: Math.round(avgConsumption * 100) / 100,
+        costPerKm: Math.round(costPerKm * 1000) / 1000,
+        monthsIncluded: monthsInWindow.length
+      });
+    }
+
+    // Get the last 24 months for the rolling trend chart (to show more data points)
+    const t12mTrendData = t12mRollingTrend.slice(-24);
 
     const avgConsumption = totalFuel > 0 ? totalDistance / totalFuel : 0;
     const t12mAvgConsumption = t12mFuel > 0 ? t12mDistance / t12mFuel : 0;
@@ -176,7 +201,7 @@ module.exports = async function handler(req, res) {
       },
       vehicleStats,
       monthly: monthlyTrend,
-      t12mTrend: t12mMonths,
+      t12mTrend: t12mTrendData,
       consumptionTrend: consumptionTrend.sort((a, b) => a.date.localeCompare(b.date))
     });
   } catch (error) {
