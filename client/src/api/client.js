@@ -43,6 +43,11 @@ export const createFuelEntry = (data) => api.post('/fuel-entries', data);
 export const updateFuelEntry = (id, data) => api.put(`/fuel-entries/${id}`, data);
 export const deleteFuelEntry = (id) => api.delete(`/fuel-entries/${id}`);
 
+// Maintenance Entries
+export const createMaintenanceEntry = (data) => api.post('/maintenance-entries', data);
+export const updateMaintenanceEntry = (id, data) => api.put(`/maintenance-entries/${id}`, data);
+export const deleteMaintenanceEntry = (id) => api.delete(`/maintenance-entries/${id}`);
+
 // Dashboard
 export const getDashboardStats = () => api.get('/dashboard/stats');
 

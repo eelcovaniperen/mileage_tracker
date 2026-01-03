@@ -25,6 +25,9 @@ module.exports = async function handler(req, res) {
         include: {
           fuelEntries: {
             orderBy: { date: 'asc' }
+          },
+          maintenanceEntries: {
+            orderBy: { date: 'desc' }
           }
         }
       });
@@ -35,17 +38,20 @@ module.exports = async function handler(req, res) {
 
       // Calculate stats
       const entries = vehicle.fuelEntries;
+      const maintenanceEntries = vehicle.maintenanceEntries;
+
       let stats = {
         totalDistance: 0,
         totalFuel: 0,
-        totalCost: 0,
+        totalFuelCost: 0,
+        totalMaintenanceCost: 0,
         avgConsumption: 0,
         costPerKm: 0
       };
 
       if (entries.length > 0) {
         stats.totalFuel = entries.reduce((sum, e) => sum + e.fuelAmount, 0);
-        stats.totalCost = entries.reduce((sum, e) => sum + e.cost, 0);
+        stats.totalFuelCost = entries.reduce((sum, e) => sum + e.cost, 0);
 
         const tripDistanceSum = entries.reduce((sum, e) => sum + (e.tripDistance || 0), 0);
         if (tripDistanceSum > 0) {
@@ -57,14 +63,28 @@ module.exports = async function handler(req, res) {
         }
 
         stats.avgConsumption = stats.totalFuel > 0 ? stats.totalDistance / stats.totalFuel : 0;
-        stats.costPerKm = stats.totalDistance > 0 ? stats.totalCost / stats.totalDistance : 0;
       }
+
+      // Calculate maintenance costs
+      stats.totalMaintenanceCost = maintenanceEntries.reduce((sum, e) => sum + e.cost, 0);
+
+      // Total running costs (fuel + maintenance)
+      const totalRunningCost = stats.totalFuelCost + stats.totalMaintenanceCost;
+      stats.costPerKm = stats.totalDistance > 0 ? totalRunningCost / stats.totalDistance : 0;
+
+      // For backwards compatibility, also include totalCost
+      stats.totalCost = stats.totalFuelCost;
 
       return res.json({ ...vehicle, stats });
     }
 
     if (req.method === 'PUT') {
-      const { name, make, model, year, initialOdometer } = req.body;
+      const {
+        name, make, model, year, initialOdometer,
+        purchasePrice, purchaseDate, registrationCost, otherInitialCosts,
+        insuranceCostYearly, roadTaxYearly, depreciationYearly,
+        financingMonthlyPayment, financingInterestRate, financingStartDate, financingEndDate, financingTotalAmount
+      } = req.body;
 
       const existing = await prisma.vehicle.findFirst({
         where: { id, userId }
@@ -81,7 +101,22 @@ module.exports = async function handler(req, res) {
           make,
           model,
           year: year ? parseInt(year) : null,
-          initialOdometer: initialOdometer ? parseFloat(initialOdometer) : existing.initialOdometer
+          initialOdometer: initialOdometer ? parseFloat(initialOdometer) : existing.initialOdometer,
+          // Purchase & Initial Costs
+          purchasePrice: purchasePrice !== undefined ? (purchasePrice ? parseFloat(purchasePrice) : null) : undefined,
+          purchaseDate: purchaseDate !== undefined ? (purchaseDate ? new Date(purchaseDate) : null) : undefined,
+          registrationCost: registrationCost !== undefined ? (registrationCost ? parseFloat(registrationCost) : null) : undefined,
+          otherInitialCosts: otherInitialCosts !== undefined ? (otherInitialCosts ? parseFloat(otherInitialCosts) : null) : undefined,
+          // Recurring Annual Costs
+          insuranceCostYearly: insuranceCostYearly !== undefined ? (insuranceCostYearly ? parseFloat(insuranceCostYearly) : null) : undefined,
+          roadTaxYearly: roadTaxYearly !== undefined ? (roadTaxYearly ? parseFloat(roadTaxYearly) : null) : undefined,
+          depreciationYearly: depreciationYearly !== undefined ? (depreciationYearly ? parseFloat(depreciationYearly) : null) : undefined,
+          // Financing
+          financingMonthlyPayment: financingMonthlyPayment !== undefined ? (financingMonthlyPayment ? parseFloat(financingMonthlyPayment) : null) : undefined,
+          financingInterestRate: financingInterestRate !== undefined ? (financingInterestRate ? parseFloat(financingInterestRate) : null) : undefined,
+          financingStartDate: financingStartDate !== undefined ? (financingStartDate ? new Date(financingStartDate) : null) : undefined,
+          financingEndDate: financingEndDate !== undefined ? (financingEndDate ? new Date(financingEndDate) : null) : undefined,
+          financingTotalAmount: financingTotalAmount !== undefined ? (financingTotalAmount ? parseFloat(financingTotalAmount) : null) : undefined
         }
       });
 

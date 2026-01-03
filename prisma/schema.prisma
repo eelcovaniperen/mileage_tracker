@@ -24,9 +24,29 @@ model Vehicle {
   model           String?
   year            Int?
   initialOdometer Float       @default(0)
+
+  // Purchase & Initial Costs
+  purchasePrice       Float?
+  purchaseDate        DateTime?
+  registrationCost    Float?
+  otherInitialCosts   Float?
+
+  // Recurring Annual Costs
+  insuranceCostYearly Float?
+  roadTaxYearly       Float?
+  depreciationYearly  Float?
+
+  // Financing
+  financingMonthlyPayment Float?
+  financingInterestRate   Float?
+  financingStartDate      DateTime?
+  financingEndDate        DateTime?
+  financingTotalAmount    Float?
+
   userId          String
   user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   fuelEntries     FuelEntry[]
+  maintenanceEntries MaintenanceEntry[]
   createdAt       DateTime    @default(now())
 }
 
@@ -45,4 +65,19 @@ model FuelEntry {
   vehicleId     String
   vehicle       Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   createdAt     DateTime @default(now())
+}
+
+model MaintenanceEntry {
+  id              String   @id @default(cuid())
+  date            DateTime
+  odometer        Float?
+  description     String
+  cost            Float
+  category        String   // service, repair, tires, brakes, oil, inspection, bodywork, other
+  invoiceNumber   String?
+  serviceProvider String?
+  notes           String?
+  vehicleId       String
+  vehicle         Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
 }
