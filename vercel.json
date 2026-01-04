@@ -10,6 +10,17 @@
     }
   },
   "rewrites": [
+    { "source": "/api/auth/:path*", "destination": "/api/handler" },
+    { "source": "/api/vehicles/:path*", "destination": "/api/handler" },
+    { "source": "/api/vehicles", "destination": "/api/handler" },
+    { "source": "/api/fuel-entries/:path*", "destination": "/api/handler" },
+    { "source": "/api/fuel-entries", "destination": "/api/handler" },
+    { "source": "/api/maintenance-entries/:path*", "destination": "/api/handler" },
+    { "source": "/api/maintenance-entries", "destination": "/api/handler" },
+    { "source": "/api/road-tax-entries/:path*", "destination": "/api/handler" },
+    { "source": "/api/road-tax-entries", "destination": "/api/handler" },
+    { "source": "/api/insurance-entries/:path*", "destination": "/api/handler" },
+    { "source": "/api/insurance-entries", "destination": "/api/handler" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

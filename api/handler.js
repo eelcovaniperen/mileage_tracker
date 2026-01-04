@@ -387,7 +387,9 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    const pathParts = req.query.path || [];
+    // Parse path from URL (e.g., /api/auth/login -> ['auth', 'login'])
+    const url = req.url.split('?')[0];
+    const pathParts = url.replace(/^\/api\//, '').split('/').filter(Boolean);
     const [resource, idOrAction] = pathParts;
 
     // Auth routes (no auth required for login/register)
