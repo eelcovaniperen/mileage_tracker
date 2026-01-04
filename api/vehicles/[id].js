@@ -28,6 +28,12 @@ module.exports = async function handler(req, res) {
           },
           maintenanceEntries: {
             orderBy: { date: 'desc' }
+          },
+          roadTaxEntries: {
+            orderBy: { startDate: 'desc' }
+          },
+          insuranceEntries: {
+            orderBy: { startDate: 'desc' }
           }
         }
       });
@@ -39,14 +45,27 @@ module.exports = async function handler(req, res) {
       // Calculate stats
       const entries = vehicle.fuelEntries;
       const maintenanceEntries = vehicle.maintenanceEntries;
+      const roadTaxEntries = vehicle.roadTaxEntries;
+      const insuranceEntries = vehicle.insuranceEntries;
 
       let stats = {
+        // Fuel stats
         totalDistance: 0,
         totalFuel: 0,
         totalFuelCost: 0,
-        totalMaintenanceCost: 0,
         avgConsumption: 0,
-        costPerKm: 0
+        fuelCostPerKm: 0,
+        // Other costs
+        totalMaintenanceCost: 0,
+        totalRoadTaxCost: 0,
+        totalInsuranceCost: 0,
+        totalDepreciationToDate: 0,
+        totalOtherCost: 0,
+        totalSpend: 0,
+        totalCostPerKm: 0,
+        // Legacy
+        costPerKm: 0,
+        totalCost: 0
       };
 
       if (entries.length > 0) {
@@ -63,16 +82,37 @@ module.exports = async function handler(req, res) {
         }
 
         stats.avgConsumption = stats.totalFuel > 0 ? stats.totalDistance / stats.totalFuel : 0;
+        stats.fuelCostPerKm = stats.totalDistance > 0 ? stats.totalFuelCost / stats.totalDistance : 0;
       }
 
       // Calculate maintenance costs
       stats.totalMaintenanceCost = maintenanceEntries.reduce((sum, e) => sum + e.cost, 0);
 
-      // Total running costs (fuel + maintenance)
-      const totalRunningCost = stats.totalFuelCost + stats.totalMaintenanceCost;
-      stats.costPerKm = stats.totalDistance > 0 ? totalRunningCost / stats.totalDistance : 0;
+      // Calculate road tax costs
+      stats.totalRoadTaxCost = roadTaxEntries.reduce((sum, e) => sum + e.cost, 0);
 
-      // For backwards compatibility, also include totalCost
+      // Calculate insurance costs
+      stats.totalInsuranceCost = insuranceEntries.reduce((sum, e) => sum + e.cost, 0);
+
+      // Calculate depreciation to date (based on yearly depreciation and purchase date)
+      if (vehicle.depreciationYearly && vehicle.purchaseDate) {
+        const purchaseDate = new Date(vehicle.purchaseDate);
+        const now = new Date();
+        const yearsOwned = (now - purchaseDate) / (1000 * 60 * 60 * 24 * 365.25);
+        stats.totalDepreciationToDate = vehicle.depreciationYearly * yearsOwned;
+      }
+
+      // Total other costs (maintenance + road tax + insurance + depreciation)
+      stats.totalOtherCost = stats.totalMaintenanceCost + stats.totalRoadTaxCost + stats.totalInsuranceCost + stats.totalDepreciationToDate;
+
+      // Total spend (fuel + all other costs)
+      stats.totalSpend = stats.totalFuelCost + stats.totalOtherCost;
+
+      // Total cost per km
+      stats.totalCostPerKm = stats.totalDistance > 0 ? stats.totalSpend / stats.totalDistance : 0;
+
+      // Legacy fields for backwards compatibility
+      stats.costPerKm = stats.totalCostPerKm;
       stats.totalCost = stats.totalFuelCost;
 
       return res.json({ ...vehicle, stats });

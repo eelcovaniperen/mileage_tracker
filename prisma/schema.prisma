@@ -47,6 +47,8 @@ model Vehicle {
   user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   fuelEntries     FuelEntry[]
   maintenanceEntries MaintenanceEntry[]
+  roadTaxEntries  RoadTaxEntry[]
+  insuranceEntries InsuranceEntry[]
   createdAt       DateTime    @default(now())
 }
 
@@ -80,4 +82,29 @@ model MaintenanceEntry {
   vehicleId       String
   vehicle         Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   createdAt       DateTime @default(now())
+}
+
+model RoadTaxEntry {
+  id          String   @id @default(cuid())
+  startDate   DateTime
+  endDate     DateTime
+  cost        Float
+  notes       String?
+  vehicleId   String
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+}
+
+model InsuranceEntry {
+  id          String   @id @default(cuid())
+  startDate   DateTime
+  endDate     DateTime
+  cost        Float
+  provider    String?
+  policyNumber String?
+  coverage    String?  // liability, comprehensive, etc.
+  notes       String?
+  vehicleId   String
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
 }

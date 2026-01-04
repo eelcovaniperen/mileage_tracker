@@ -48,6 +48,16 @@ export const createMaintenanceEntry = (data) => api.post('/maintenance-entries',
 export const updateMaintenanceEntry = (id, data) => api.put(`/maintenance-entries/${id}`, data);
 export const deleteMaintenanceEntry = (id) => api.delete(`/maintenance-entries/${id}`);
 
+// Road Tax Entries
+export const createRoadTaxEntry = (data) => api.post('/road-tax-entries', data);
+export const updateRoadTaxEntry = (id, data) => api.put(`/road-tax-entries/${id}`, data);
+export const deleteRoadTaxEntry = (id) => api.delete(`/road-tax-entries/${id}`);
+
+// Insurance Entries
+export const createInsuranceEntry = (data) => api.post('/insurance-entries', data);
+export const updateInsuranceEntry = (id, data) => api.put(`/insurance-entries/${id}`, data);
+export const deleteInsuranceEntry = (id) => api.delete(`/insurance-entries/${id}`);
+
 // Dashboard
 export const getDashboardStats = () => api.get('/dashboard/stats');
 
