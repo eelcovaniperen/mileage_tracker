@@ -4,6 +4,17 @@
   "installCommand": "npm install && cd client && npm install",
   "framework": null,
   "rewrites": [
+    { "source": "/api/auth/:path*", "destination": "/api/auth/[[...path]]" },
+    { "source": "/api/vehicles/:path*", "destination": "/api/vehicles/[[...params]]" },
+    { "source": "/api/vehicles", "destination": "/api/vehicles/[[...params]]" },
+    { "source": "/api/fuel-entries/:path*", "destination": "/api/fuel-entries/[[...params]]" },
+    { "source": "/api/fuel-entries", "destination": "/api/fuel-entries/[[...params]]" },
+    { "source": "/api/maintenance-entries/:path*", "destination": "/api/maintenance-entries/[[...params]]" },
+    { "source": "/api/maintenance-entries", "destination": "/api/maintenance-entries/[[...params]]" },
+    { "source": "/api/road-tax-entries/:path*", "destination": "/api/road-tax-entries/[[...params]]" },
+    { "source": "/api/road-tax-entries", "destination": "/api/road-tax-entries/[[...params]]" },
+    { "source": "/api/insurance-entries/:path*", "destination": "/api/insurance-entries/[[...params]]" },
+    { "source": "/api/insurance-entries", "destination": "/api/insurance-entries/[[...params]]" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
