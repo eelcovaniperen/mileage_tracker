@@ -43,6 +43,10 @@ model Vehicle {
   financingEndDate        DateTime?
   financingTotalAmount    Float?
 
+  // Sale/Disposal
+  soldDate        DateTime?
+  soldPrice       Float?
+
   userId          String
   user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   fuelEntries     FuelEntry[]

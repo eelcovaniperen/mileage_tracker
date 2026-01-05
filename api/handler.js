@@ -120,11 +120,15 @@ async function handleVehicleGet(req, res, userId, id) {
 
   if (!vehicle) return res.status(404).json({ error: 'Vehicle not found' });
 
+  // Determine vehicle status
+  const status = vehicle.soldDate ? 'inactive' : 'active';
+
   const entries = vehicle.fuelEntries;
   let stats = {
     totalDistance: 0, totalFuel: 0, totalFuelCost: 0, avgConsumption: 0, fuelCostPerKm: 0,
-    totalMaintenanceCost: 0, totalRoadTaxCost: 0, totalInsuranceCost: 0, totalDepreciationToDate: 0,
-    totalOtherCost: 0, totalSpend: 0, totalCostPerKm: 0, costPerKm: 0, totalCost: 0
+    totalMaintenanceCost: 0, totalRoadTaxCost: 0, totalInsuranceCost: 0,
+    expectedDepreciation: 0, actualDepreciation: 0, totalDepreciationToDate: 0,
+    totalOtherCost: 0, totalSpend: 0, netCost: 0, totalCostPerKm: 0, costPerKm: 0, totalCost: 0
   };
 
   if (entries.length > 0) {
@@ -146,18 +150,29 @@ async function handleVehicleGet(req, res, userId, id) {
   stats.totalRoadTaxCost = vehicle.roadTaxEntries.reduce((sum, e) => sum + e.cost, 0);
   stats.totalInsuranceCost = vehicle.insuranceEntries.reduce((sum, e) => sum + e.cost, 0);
 
-  if (vehicle.depreciationYearly && vehicle.purchaseDate) {
+  // Calculate depreciation
+  if (vehicle.soldDate && vehicle.purchasePrice) {
+    // Actual depreciation when sold = purchase price - sale price
+    stats.actualDepreciation = vehicle.purchasePrice - (vehicle.soldPrice || 0);
+    stats.totalDepreciationToDate = stats.actualDepreciation;
+  } else if (vehicle.depreciationYearly && vehicle.purchaseDate) {
+    // Expected depreciation based on yearly rate
     const yearsOwned = (new Date() - new Date(vehicle.purchaseDate)) / (1000 * 60 * 60 * 24 * 365.25);
-    stats.totalDepreciationToDate = vehicle.depreciationYearly * yearsOwned;
+    stats.expectedDepreciation = vehicle.depreciationYearly * yearsOwned;
+    stats.totalDepreciationToDate = stats.expectedDepreciation;
   }
 
   stats.totalOtherCost = stats.totalMaintenanceCost + stats.totalRoadTaxCost + stats.totalInsuranceCost + stats.totalDepreciationToDate;
   stats.totalSpend = stats.totalFuelCost + stats.totalOtherCost;
+
+  // Net cost accounts for sale proceeds
+  stats.netCost = vehicle.soldPrice ? stats.totalSpend - vehicle.soldPrice : stats.totalSpend;
+
   stats.totalCostPerKm = stats.totalDistance > 0 ? stats.totalSpend / stats.totalDistance : 0;
   stats.costPerKm = stats.totalCostPerKm;
   stats.totalCost = stats.totalFuelCost;
 
-  return res.json({ ...vehicle, stats });
+  return res.json({ ...vehicle, status, stats });
 }
 
 async function handleVehicleUpdate(req, res, userId, id) {
@@ -166,7 +181,7 @@ async function handleVehicleUpdate(req, res, userId, id) {
 
   const { name, make, model, year, initialOdometer, purchasePrice, purchaseDate, registrationCost, otherInitialCosts,
     insuranceCostYearly, roadTaxYearly, depreciationYearly, financingMonthlyPayment, financingInterestRate,
-    financingStartDate, financingEndDate, financingTotalAmount } = req.body;
+    financingStartDate, financingEndDate, financingTotalAmount, soldDate, soldPrice } = req.body;
 
   const vehicle = await prisma.vehicle.update({
     where: { id },
@@ -185,7 +200,9 @@ async function handleVehicleUpdate(req, res, userId, id) {
       financingInterestRate: financingInterestRate !== undefined ? (financingInterestRate ? parseFloat(financingInterestRate) : null) : undefined,
       financingStartDate: financingStartDate !== undefined ? (financingStartDate ? new Date(financingStartDate) : null) : undefined,
       financingEndDate: financingEndDate !== undefined ? (financingEndDate ? new Date(financingEndDate) : null) : undefined,
-      financingTotalAmount: financingTotalAmount !== undefined ? (financingTotalAmount ? parseFloat(financingTotalAmount) : null) : undefined
+      financingTotalAmount: financingTotalAmount !== undefined ? (financingTotalAmount ? parseFloat(financingTotalAmount) : null) : undefined,
+      soldDate: soldDate !== undefined ? (soldDate ? new Date(soldDate) : null) : undefined,
+      soldPrice: soldPrice !== undefined ? (soldPrice ? parseFloat(soldPrice) : null) : undefined
     }
   });
   return res.json(vehicle);

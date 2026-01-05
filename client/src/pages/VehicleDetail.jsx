@@ -72,7 +72,9 @@ export default function VehicleDetail() {
     financingInterestRate: '',
     financingStartDate: '',
     financingEndDate: '',
-    financingTotalAmount: ''
+    financingTotalAmount: '',
+    soldDate: '',
+    soldPrice: ''
   });
 
   const [maintenanceFormData, setMaintenanceFormData] = useState({
@@ -131,7 +133,9 @@ export default function VehicleDetail() {
         financingInterestRate: res.data.financingInterestRate || '',
         financingStartDate: res.data.financingStartDate ? res.data.financingStartDate.split('T')[0] : '',
         financingEndDate: res.data.financingEndDate ? res.data.financingEndDate.split('T')[0] : '',
-        financingTotalAmount: res.data.financingTotalAmount || ''
+        financingTotalAmount: res.data.financingTotalAmount || '',
+        soldDate: res.data.soldDate ? res.data.soldDate.split('T')[0] : '',
+        soldPrice: res.data.soldPrice || ''
       });
     } catch (err) {
       console.error('Failed to load vehicle:', err);
@@ -495,6 +499,11 @@ export default function VehicleDetail() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="page-header" style={{ marginBottom: 0 }}>{vehicle.name}</h1>
+              {vehicle.status === 'inactive' ? (
+                <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-[var(--text-muted)]/20 text-[var(--text-muted)]">Sold</span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-[var(--success)]/20 text-[var(--success)]">Active</span>
+              )}
               <button
                 onClick={() => setShowEditVehicle(!showEditVehicle)}
                 className="p-1.5 text-[var(--text-muted)] hover:text-[var(--accent-secondary)] transition-colors"
@@ -587,12 +596,13 @@ export default function VehicleDetail() {
               </div>
             </div>
 
-            {/* Depreciation */}
+            {/* Expected Depreciation */}
             <div>
-              <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4">Depreciation</h3>
+              <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4">Expected Depreciation</h3>
+              <p className="text-xs text-[var(--text-muted)] mb-4">Set the expected yearly depreciation. When you sell the vehicle, the actual depreciation will be calculated automatically.</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="input-label">Depreciation (EUR/year)</label>
+                  <label className="input-label">Expected Depreciation (EUR/year)</label>
                   <input type="number" value={vehicleFormData.depreciationYearly} onChange={(e) => setVehicleFormData({ ...vehicleFormData, depreciationYearly: e.target.value })} className="input-field" step="0.01" placeholder="0.00" />
                 </div>
               </div>
@@ -622,6 +632,32 @@ export default function VehicleDetail() {
                   <label className="input-label">Total Amount (EUR)</label>
                   <input type="number" value={vehicleFormData.financingTotalAmount} onChange={(e) => setVehicleFormData({ ...vehicleFormData, financingTotalAmount: e.target.value })} className="input-field" step="0.01" placeholder="0.00" />
                 </div>
+              </div>
+            </div>
+
+            {/* Sale/Disposal */}
+            <div>
+              <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4">Sale / Disposal</h3>
+              <p className="text-xs text-[var(--text-muted)] mb-4">When you sell or dispose of this vehicle, enter the details below. This will mark the vehicle as inactive and calculate the actual depreciation.</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div>
+                  <label className="input-label">Sale Date</label>
+                  <input type="date" value={vehicleFormData.soldDate} onChange={(e) => setVehicleFormData({ ...vehicleFormData, soldDate: e.target.value })} className="input-field" />
+                </div>
+                <div>
+                  <label className="input-label">Sale Price (EUR)</label>
+                  <input type="number" value={vehicleFormData.soldPrice} onChange={(e) => setVehicleFormData({ ...vehicleFormData, soldPrice: e.target.value })} className="input-field" step="0.01" placeholder="0.00" />
+                </div>
+                {vehicleFormData.soldDate && vehicleFormData.purchasePrice && (
+                  <div className="flex items-end">
+                    <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)]">
+                      <p className="text-xs text-[var(--text-muted)] mb-1">Actual Depreciation</p>
+                      <p className="text-lg font-semibold text-[var(--text-primary)]">
+                        {(parseFloat(vehicleFormData.purchasePrice) - (parseFloat(vehicleFormData.soldPrice) || 0)).toFixed(2)} EUR
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -659,19 +695,31 @@ export default function VehicleDetail() {
       {/* Stats - Row 2: Other Costs */}
       <div className="mb-8">
         <h3 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">Other Costs</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <div className="kpi-card">
             <p className="kpi-label mb-1">Maintenance</p>
             <p className="kpi-value text-xl">{stats.totalMaintenanceCost.toFixed(2)} <span className="text-sm text-[var(--text-muted)] font-normal">EUR</span></p>
           </div>
           <div className="kpi-card">
-            <p className="kpi-label mb-1">Other Costs</p>
-            <p className="kpi-value text-xl">{stats.totalOtherCost.toFixed(2)} <span className="text-sm text-[var(--text-muted)] font-normal">EUR</span></p>
+            <p className="kpi-label mb-1">{stats.actualDepreciation > 0 ? 'Actual Depreciation' : 'Est. Depreciation'}</p>
+            <p className="kpi-value text-xl">{stats.totalDepreciationToDate.toFixed(2)} <span className="text-sm text-[var(--text-muted)] font-normal">EUR</span></p>
           </div>
           <div className="kpi-card">
             <p className="kpi-label mb-1">Total Spend</p>
             <p className="kpi-value text-xl">{stats.totalSpend.toFixed(2)} <span className="text-sm text-[var(--text-muted)] font-normal">EUR</span></p>
           </div>
+          {vehicle.soldPrice ? (
+            <div className="kpi-card border-[var(--success)]/30">
+              <p className="kpi-label mb-1">Net Cost</p>
+              <p className="kpi-value text-xl">{stats.netCost.toFixed(2)} <span className="text-sm text-[var(--text-muted)] font-normal">EUR</span></p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">After {vehicle.soldPrice.toFixed(0)} EUR sale</p>
+            </div>
+          ) : (
+            <div className="kpi-card">
+              <p className="kpi-label mb-1">Other Costs</p>
+              <p className="kpi-value text-xl">{stats.totalOtherCost.toFixed(2)} <span className="text-sm text-[var(--text-muted)] font-normal">EUR</span></p>
+            </div>
+          )}
           <div className="kpi-card">
             <p className="kpi-label mb-1">Total Cost/km</p>
             <p className="kpi-value text-xl">{stats.totalCostPerKm.toFixed(3)} <span className="text-sm text-[var(--text-muted)] font-normal">EUR</span></p>
