@@ -123,7 +123,7 @@ export default function Dashboard() {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-3" style={{ fontFamily: 'Syne, sans-serif' }}>
-            Welcome to MileageTracker
+            Welcome to DriveTotal
           </h2>
           <p className="text-[var(--text-secondary)] mb-8 max-w-md mx-auto">
             Start by adding your first vehicle and recording fuel entries to see your consumption analytics.

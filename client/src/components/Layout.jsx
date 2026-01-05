@@ -24,13 +24,9 @@ export default function Layout({ children }) {
           <div className="flex justify-between items-center h-14">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[var(--accent-primary)] flex items-center justify-center">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
+              <img src="/logo.jpg" alt="DriveTotal" className="w-8 h-8 rounded-lg object-cover" />
               <span className="text-base font-semibold text-[var(--text-primary)]" style={{ fontFamily: 'Syne, sans-serif' }}>
-                Mileage<span className="text-[var(--accent-secondary)]">Tracker</span>
+                Drive<span className="text-[var(--accent-secondary)]">Total</span>
               </span>
             </Link>
 

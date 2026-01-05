@@ -34,13 +34,9 @@ export default function Register() {
         {/* Logo */}
         <div className="text-center mb-10">
           <Link to="/" className="inline-flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-lg bg-[var(--accent-primary)] flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
+            <img src="/logo.jpg" alt="DriveTotal" className="w-10 h-10 rounded-lg object-cover" />
             <span className="text-xl font-bold text-[var(--text-primary)]" style={{ fontFamily: 'Syne, sans-serif' }}>
-              Mileage<span className="text-[var(--accent-secondary)]">Tracker</span>
+              Drive<span className="text-[var(--accent-secondary)]">Total</span>
             </span>
           </Link>
         </div>

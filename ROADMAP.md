@@ -1,4 +1,4 @@
-# MileageTracker Roadmap
+# DriveTotal Roadmap
 
 > A comprehensive vehicle management and expense tracking application
 
@@ -23,7 +23,7 @@
 
 ## Project Overview
 
-MileageTracker is a full-stack web application for tracking vehicle expenses, fuel consumption, maintenance, and total cost of ownership. It provides comprehensive analytics to help users understand their vehicle costs over time.
+DriveTotal is a full-stack web application for tracking vehicle expenses, fuel consumption, maintenance, and total cost of ownership. It provides comprehensive analytics to help users understand their vehicle costs over time.
 
 ### Key Capabilities
 
