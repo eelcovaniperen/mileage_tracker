@@ -278,11 +278,11 @@ MileageTracker is a full-stack web application for tracking vehicle expenses, fu
 ### Medium-term
 
 #### Enhanced Analytics
-- [ ] Year-over-year comparison
-- [ ] Cost breakdown pie charts
-- [ ] Fuel price trend tracking
-- [ ] Projected annual costs
-- [ ] Compare vehicles side-by-side
+- [x] Year-over-year comparison
+- [x] Cost breakdown pie charts
+- [x] Fuel price trend tracking
+- [x] Projected annual costs
+- [x] Compare vehicles side-by-side
 
 #### Data Entry Improvements
 - [ ] Receipt/document upload

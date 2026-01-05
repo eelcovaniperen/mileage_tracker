@@ -33,9 +33,14 @@ module.exports = async function handler(req, res) {
       }
     });
 
-    // Calculate T12M date threshold
+    // Calculate date thresholds
     const now = new Date();
     const t12mDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+    const currentYear = now.getFullYear();
+    const previousYear = currentYear - 1;
+    const currentYearStart = new Date(currentYear, 0, 1);
+    const previousYearStart = new Date(previousYear, 0, 1);
+    const previousYearEnd = new Date(previousYear, 11, 31, 23, 59, 59);
 
     let totalDistance = 0;
     let totalFuel = 0;
@@ -46,6 +51,19 @@ module.exports = async function handler(req, res) {
     const monthlyData = {};
     const consumptionTrend = [];
     const vehicleStats = [];
+    const fuelPriceTrend = [];
+
+    // Year-over-year tracking
+    let currentYearData = { distance: 0, fuel: 0, cost: 0, entries: 0 };
+    let previousYearData = { distance: 0, fuel: 0, cost: 0, entries: 0 };
+
+    // Cost breakdown totals
+    let totalFuelCost = 0;
+    let totalMaintenanceCost = 0;
+    let totalRoadTaxCost = 0;
+    let totalInsuranceCost = 0;
+    let totalFinancingCost = 0;
+    let totalDepreciationCost = 0;
 
     for (const vehicle of vehicles) {
       const entries = vehicle.fuelEntries;
@@ -84,6 +102,14 @@ module.exports = async function handler(req, res) {
 
       // Net cost = total cost - sale proceeds
       const vehicleNetCost = vehicle.soldPrice ? vehicleTotalCost - vehicle.soldPrice : vehicleTotalCost;
+
+      // Accumulate cost breakdown totals
+      totalFuelCost += vehicleFuelCost;
+      totalMaintenanceCost += vehicleMaintenanceCost;
+      totalRoadTaxCost += vehicleRoadTaxCost;
+      totalInsuranceCost += vehicleInsuranceCost;
+      totalFinancingCost += vehicleFinancingCost;
+      totalDepreciationCost += vehicleDepreciation;
 
       if (entries.length === 0) {
         vehicleStats.push({
@@ -154,6 +180,29 @@ module.exports = async function handler(req, res) {
           monthlyData[monthKey].distance += entry.tripDistance;
         }
         monthlyData[monthKey].entries.push(entry);
+
+        // Year-over-year tracking
+        const entryDate = new Date(entry.date);
+        if (entryDate >= currentYearStart) {
+          currentYearData.fuel += entry.fuelAmount;
+          currentYearData.cost += entry.cost;
+          currentYearData.entries++;
+          if (entry.tripDistance) currentYearData.distance += entry.tripDistance;
+        } else if (entryDate >= previousYearStart && entryDate <= previousYearEnd) {
+          previousYearData.fuel += entry.fuelAmount;
+          previousYearData.cost += entry.cost;
+          previousYearData.entries++;
+          if (entry.tripDistance) previousYearData.distance += entry.tripDistance;
+        }
+
+        // Fuel price trend (only if pricePerLiter is recorded)
+        if (entry.pricePerLiter) {
+          fuelPriceTrend.push({
+            date: entry.date.toISOString().slice(0, 10),
+            price: Math.round(entry.pricePerLiter * 1000) / 1000,
+            vehicle: vehicle.name
+          });
+        }
       }
 
       // Consumption trend
@@ -224,6 +273,84 @@ module.exports = async function handler(req, res) {
     const avgConsumption = totalFuel > 0 ? totalDistance / totalFuel : 0;
     const t12mAvgConsumption = t12mFuel > 0 ? t12mDistance / t12mFuel : 0;
 
+    // Calculate year-over-year comparison
+    const currentYearAvgConsumption = currentYearData.fuel > 0 ? currentYearData.distance / currentYearData.fuel : 0;
+    const previousYearAvgConsumption = previousYearData.fuel > 0 ? previousYearData.distance / previousYearData.fuel : 0;
+
+    const yearOverYear = {
+      currentYear: {
+        year: currentYear,
+        distance: Math.round(currentYearData.distance),
+        fuel: Math.round(currentYearData.fuel * 100) / 100,
+        cost: Math.round(currentYearData.cost * 100) / 100,
+        avgConsumption: Math.round(currentYearAvgConsumption * 100) / 100,
+        entries: currentYearData.entries
+      },
+      previousYear: {
+        year: previousYear,
+        distance: Math.round(previousYearData.distance),
+        fuel: Math.round(previousYearData.fuel * 100) / 100,
+        cost: Math.round(previousYearData.cost * 100) / 100,
+        avgConsumption: Math.round(previousYearAvgConsumption * 100) / 100,
+        entries: previousYearData.entries
+      },
+      changes: {
+        distance: previousYearData.distance > 0
+          ? Math.round(((currentYearData.distance - previousYearData.distance) / previousYearData.distance) * 100)
+          : null,
+        cost: previousYearData.cost > 0
+          ? Math.round(((currentYearData.cost - previousYearData.cost) / previousYearData.cost) * 100)
+          : null,
+        consumption: previousYearAvgConsumption > 0
+          ? Math.round(((currentYearAvgConsumption - previousYearAvgConsumption) / previousYearAvgConsumption) * 100)
+          : null
+      }
+    };
+
+    // Cost breakdown for pie chart
+    const totalAllCosts = totalFuelCost + totalMaintenanceCost + totalRoadTaxCost + totalInsuranceCost + totalFinancingCost + totalDepreciationCost;
+    const costBreakdown = [
+      { name: 'Fuel', value: Math.round(totalFuelCost * 100) / 100, color: '#3b82f6' },
+      { name: 'Maintenance', value: Math.round(totalMaintenanceCost * 100) / 100, color: '#f59e0b' },
+      { name: 'Road Tax', value: Math.round(totalRoadTaxCost * 100) / 100, color: '#10b981' },
+      { name: 'Insurance', value: Math.round(totalInsuranceCost * 100) / 100, color: '#8b5cf6' },
+      { name: 'Financing', value: Math.round(totalFinancingCost * 100) / 100, color: '#ef4444' },
+      { name: 'Depreciation', value: Math.round(totalDepreciationCost * 100) / 100, color: '#6b7280' }
+    ].filter(item => item.value > 0);
+
+    // Calculate projected annual costs based on T12M data
+    const monthsElapsedThisYear = now.getMonth() + 1;
+    const projectedAnnualCosts = {
+      fuel: monthsElapsedThisYear > 0 ? Math.round((currentYearData.cost / monthsElapsedThisYear) * 12) : 0,
+      distance: monthsElapsedThisYear > 0 ? Math.round((currentYearData.distance / monthsElapsedThisYear) * 12) : 0,
+      // Use T12M for more accurate projection if available
+      basedOnT12M: t12mCost > 0 ? {
+        cost: Math.round(t12mCost),
+        distance: Math.round(t12mDistance)
+      } : null
+    };
+
+    // Vehicle comparison data
+    const vehicleComparison = vehicles.map(v => {
+      const vStats = vehicleStats.find(vs => vs.id === v.id) || {};
+      return {
+        id: v.id,
+        name: v.name,
+        make: v.make,
+        model: v.model,
+        year: v.year,
+        photo: v.photo,
+        status: v.soldDate ? 'sold' : 'active',
+        stats: {
+          totalDistance: vStats.totalDistance || 0,
+          avgConsumption: vStats.avgConsumption || 0,
+          fuelCostPerKm: vStats.costPerKm || 0,
+          totalCost: vStats.totalCost || 0,
+          totalCostPerKm: vStats.totalCostPerKm || 0
+        }
+      };
+    });
+
     res.json({
       summary: {
         totalDistance: Math.round(totalDistance),
@@ -244,6 +371,11 @@ module.exports = async function handler(req, res) {
           ? Math.round((t12mCost / t12mDistance) * 1000) / 1000
           : 0
       },
+      yearOverYear,
+      costBreakdown,
+      projectedAnnualCosts,
+      vehicleComparison,
+      fuelPriceTrend: fuelPriceTrend.sort((a, b) => a.date.localeCompare(b.date)),
       vehicleStats,
       monthly: monthlyTrend,
       t12mTrend: t12mTrendData,
