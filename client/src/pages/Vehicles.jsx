@@ -317,12 +317,14 @@ export default function Vehicles() {
       ) : (
         <div className="space-y-3">
           {/* Table Header */}
-          <div className="hidden lg:grid lg:grid-cols-12 gap-4 px-4 py-2 text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
-            <div className="col-span-4">Vehicle</div>
-            <div className="col-span-2 text-right">Distance</div>
-            <div className="col-span-2 text-right">Total Cost</div>
-            <div className="col-span-2 text-right">Cost/km</div>
-            <div className="col-span-2"></div>
+          <div className="hidden lg:grid gap-3 px-4 py-2 text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider" style={{ gridTemplateColumns: '2.5fr 1fr 1fr 1fr 1fr 1fr 100px' }}>
+            <div>Vehicle</div>
+            <div className="text-right">Distance</div>
+            <div className="text-right">km/L</div>
+            <div className="text-right">Fuel/km</div>
+            <div className="text-right">Total Cost</div>
+            <div className="text-right">Cost/km</div>
+            <div></div>
           </div>
 
           {/* Vehicle Rows */}
@@ -336,59 +338,44 @@ export default function Vehicles() {
                 className="glass-card group animate-fade-in hover:border-[var(--border-hover)] transition-all duration-200"
                 style={{ animationDelay: `${index * 30}ms` }}
               >
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 p-4 items-center">
+                {/* Desktop Layout */}
+                <div className="hidden lg:grid gap-3 p-4 items-center" style={{ gridTemplateColumns: '2.5fr 1fr 1fr 1fr 1fr 1fr 100px' }}>
                   {/* Vehicle Info */}
-                  <div className="col-span-1 lg:col-span-4 flex items-center gap-4">
+                  <div className="flex items-center gap-4">
                     {/* Photo */}
                     <div className="relative group/photo flex-shrink-0">
-                      <div className="w-16 h-16 rounded-xl overflow-hidden bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
+                      <div className="w-14 h-14 rounded-xl overflow-hidden bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
                         {vehicle.photo ? (
-                          <img
-                            src={vehicle.photo}
-                            alt={vehicle.name}
-                            className="w-full h-full object-cover"
-                          />
+                          <img src={vehicle.photo} alt={vehicle.name} className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <svg className="w-7 h-7 text-[var(--text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-6 h-6 text-[var(--text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
                             </svg>
                           </div>
                         )}
                       </div>
-                      {/* Upload overlay */}
                       <label className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover/photo:opacity-100 rounded-xl cursor-pointer transition-opacity">
                         {uploadingPhoto === vehicle.id ? (
-                          <svg className="animate-spin w-5 h-5 text-white" fill="none" viewBox="0 0 24 24">
+                          <svg className="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
                         ) : (
-                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                           </svg>
                         )}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => handlePhotoUpload(vehicle.id, e.target.files[0])}
-                        />
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handlePhotoUpload(vehicle.id, e.target.files[0])} />
                       </label>
                     </div>
-
-                    {/* Name & Details */}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-[var(--text-primary)] truncate">
-                          {vehicle.name}
-                        </h3>
+                        <h3 className="font-semibold text-[var(--text-primary)] truncate">{vehicle.name}</h3>
                         {!isActive && (
-                          <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-[var(--text-muted)]/20 text-[var(--text-muted)]">
-                            SOLD
-                          </span>
+                          <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-[var(--text-muted)]/20 text-[var(--text-muted)]">SOLD</span>
                         )}
                       </div>
                       <p className="text-sm text-[var(--text-muted)] truncate">
@@ -397,67 +384,132 @@ export default function Vehicles() {
                     </div>
                   </div>
 
-                  {/* Stats - Desktop */}
-                  <div className="hidden lg:block lg:col-span-2 text-right">
+                  {/* Distance */}
+                  <div className="text-right">
                     <span className="text-sm font-medium text-[var(--text-primary)] tabular-nums">
-                      {stats.totalDistance > 0 ? `${stats.totalDistance.toLocaleString()} km` : '-'}
+                      {stats.totalDistance > 0 ? `${stats.totalDistance.toLocaleString()}` : '-'}
                     </span>
                   </div>
 
-                  <div className="hidden lg:block lg:col-span-2 text-right">
+                  {/* km/L */}
+                  <div className="text-right">
+                    <span className="text-sm font-medium text-[var(--text-primary)] tabular-nums">
+                      {stats.avgConsumption > 0 ? stats.avgConsumption.toFixed(1) : '-'}
+                    </span>
+                  </div>
+
+                  {/* Fuel/km */}
+                  <div className="text-right">
+                    <span className="text-sm font-medium text-[var(--text-muted)] tabular-nums">
+                      {stats.costPerKm > 0 ? `€${stats.costPerKm.toFixed(3)}` : '-'}
+                    </span>
+                  </div>
+
+                  {/* Total Cost */}
+                  <div className="text-right">
                     <span className="text-sm font-medium text-[var(--text-primary)] tabular-nums">
                       {stats.totalCost > 0 ? formatCurrency(stats.totalCost) : '-'}
                     </span>
                   </div>
 
-                  <div className="hidden lg:block lg:col-span-2 text-right">
+                  {/* Cost/km */}
+                  <div className="text-right">
                     <span className="text-sm font-medium text-[var(--accent-secondary)] tabular-nums">
-                      {stats.totalCostPerKm > 0 ? `${stats.totalCostPerKm.toFixed(3)}/km` : '-'}
+                      {stats.totalCostPerKm > 0 ? `€${stats.totalCostPerKm.toFixed(3)}` : '-'}
                     </span>
                   </div>
 
-                  {/* Stats - Mobile */}
-                  <div className="lg:hidden col-span-1 grid grid-cols-3 gap-3 py-2 px-3 bg-[var(--bg-secondary)] rounded-lg text-xs">
-                    <div>
-                      <span className="text-[var(--text-muted)] block mb-0.5">Distance</span>
-                      <span className="text-[var(--text-primary)] font-medium tabular-nums">
-                        {stats.totalDistance > 0 ? `${stats.totalDistance.toLocaleString()} km` : '-'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[var(--text-muted)] block mb-0.5">Total Cost</span>
-                      <span className="text-[var(--text-primary)] font-medium tabular-nums">
-                        {stats.totalCost > 0 ? formatCurrency(stats.totalCost) : '-'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[var(--text-muted)] block mb-0.5">Cost/km</span>
-                      <span className="text-[var(--accent-secondary)] font-medium tabular-nums">
-                        {stats.totalCostPerKm > 0 ? `${stats.totalCostPerKm.toFixed(3)}` : '-'}
-                      </span>
-                    </div>
-                  </div>
-
                   {/* Actions */}
-                  <div className="col-span-1 lg:col-span-2 flex items-center justify-end gap-2">
-                    <Link
-                      to={`/vehicles/${vehicle.id}`}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-[var(--accent-secondary)] hover:text-[var(--accent-primary)] transition-colors"
-                    >
+                  <div className="flex items-center justify-end gap-2">
+                    <Link to={`/vehicles/${vehicle.id}`} className="flex items-center gap-1 px-2 py-1 text-sm font-medium text-[var(--accent-secondary)] hover:text-[var(--accent-primary)] transition-colors">
                       <span>Details</span>
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </Link>
-                    <button
-                      onClick={() => handleDelete(vehicle.id)}
-                      className="p-1.5 text-[var(--text-muted)] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
-                      title="Delete vehicle"
-                    >
+                    <button onClick={() => handleDelete(vehicle.id)} className="p-1.5 text-[var(--text-muted)] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all" title="Delete vehicle">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                     </button>
+                  </div>
+                </div>
+
+                {/* Mobile Layout */}
+                <div className="lg:hidden p-4 space-y-3">
+                  <div className="flex items-center gap-3">
+                    {/* Photo */}
+                    <div className="relative group/photo flex-shrink-0">
+                      <div className="w-14 h-14 rounded-xl overflow-hidden bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
+                        {vehicle.photo ? (
+                          <img src={vehicle.photo} alt={vehicle.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <svg className="w-6 h-6 text-[var(--text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                      <label className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover/photo:opacity-100 rounded-xl cursor-pointer transition-opacity">
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handlePhotoUpload(vehicle.id, e.target.files[0])} />
+                      </label>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-[var(--text-primary)] truncate">{vehicle.name}</h3>
+                        {!isActive && (
+                          <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-[var(--text-muted)]/20 text-[var(--text-muted)]">SOLD</span>
+                        )}
+                      </div>
+                      <p className="text-sm text-[var(--text-muted)] truncate">
+                        {[vehicle.make, vehicle.model, vehicle.year].filter(Boolean).join(' ') || 'No details'}
+                      </p>
+                    </div>
+                    <Link to={`/vehicles/${vehicle.id}`} className="flex items-center gap-1 px-2 py-1 text-sm font-medium text-[var(--accent-secondary)]">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Link>
+                  </div>
+
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-5 gap-2 py-2 px-3 bg-[var(--bg-secondary)] rounded-lg text-xs">
+                    <div>
+                      <span className="text-[var(--text-muted)] block mb-0.5">Distance</span>
+                      <span className="text-[var(--text-primary)] font-medium tabular-nums">
+                        {stats.totalDistance > 0 ? `${(stats.totalDistance / 1000).toFixed(1)}k` : '-'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[var(--text-muted)] block mb-0.5">km/L</span>
+                      <span className="text-[var(--text-primary)] font-medium tabular-nums">
+                        {stats.avgConsumption > 0 ? stats.avgConsumption.toFixed(1) : '-'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[var(--text-muted)] block mb-0.5">Fuel/km</span>
+                      <span className="text-[var(--text-muted)] font-medium tabular-nums">
+                        {stats.costPerKm > 0 ? `€${stats.costPerKm.toFixed(2)}` : '-'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[var(--text-muted)] block mb-0.5">Total</span>
+                      <span className="text-[var(--text-primary)] font-medium tabular-nums">
+                        {stats.totalCost > 0 ? `€${(stats.totalCost / 1000).toFixed(1)}k` : '-'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[var(--text-muted)] block mb-0.5">Cost/km</span>
+                      <span className="text-[var(--accent-secondary)] font-medium tabular-nums">
+                        {stats.totalCostPerKm > 0 ? `€${stats.totalCostPerKm.toFixed(2)}` : '-'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
