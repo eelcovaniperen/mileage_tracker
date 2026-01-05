@@ -93,7 +93,7 @@ async function handleVehiclesList(req, res, userId) {
 }
 
 async function handleVehicleCreate(req, res, userId) {
-  const { name, make, model, year, initialOdometer } = req.body;
+  const { name, make, model, year, initialOdometer, photo } = req.body;
   if (!name) return res.status(400).json({ error: 'Vehicle name is required' });
 
   const vehicle = await prisma.vehicle.create({
@@ -101,6 +101,7 @@ async function handleVehicleCreate(req, res, userId) {
       name, make, model,
       year: year ? parseInt(year) : null,
       initialOdometer: initialOdometer ? parseFloat(initialOdometer) : 0,
+      photo: photo || null,
       userId
     }
   });
@@ -191,7 +192,7 @@ async function handleVehicleUpdate(req, res, userId, id) {
   const existing = await prisma.vehicle.findFirst({ where: { id, userId } });
   if (!existing) return res.status(404).json({ error: 'Vehicle not found' });
 
-  const { name, make, model, year, initialOdometer, purchasePrice, purchaseDate, registrationCost, otherInitialCosts,
+  const { name, make, model, year, initialOdometer, photo, purchasePrice, purchaseDate, registrationCost, otherInitialCosts,
     insuranceCostYearly, roadTaxYearly, depreciationYearly, financingMonthlyPayment, financingInterestRate,
     financingStartDate, financingEndDate, financingTotalAmount, soldDate, soldPrice } = req.body;
 
@@ -201,6 +202,7 @@ async function handleVehicleUpdate(req, res, userId, id) {
       name, make, model,
       year: year ? parseInt(year) : null,
       initialOdometer: initialOdometer ? parseFloat(initialOdometer) : existing.initialOdometer,
+      photo: photo !== undefined ? (photo || null) : undefined,
       purchasePrice: purchasePrice !== undefined ? (purchasePrice ? parseFloat(purchasePrice) : null) : undefined,
       purchaseDate: purchaseDate !== undefined ? (purchaseDate ? new Date(purchaseDate) : null) : undefined,
       registrationCost: registrationCost !== undefined ? (registrationCost ? parseFloat(registrationCost) : null) : undefined,

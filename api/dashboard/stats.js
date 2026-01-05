@@ -26,7 +26,10 @@ module.exports = async function handler(req, res) {
       include: {
         fuelEntries: {
           orderBy: { date: 'asc' }
-        }
+        },
+        maintenanceEntries: true,
+        roadTaxEntries: true,
+        insuranceEntries: true
       }
     });
 
@@ -46,12 +49,50 @@ module.exports = async function handler(req, res) {
 
     for (const vehicle of vehicles) {
       const entries = vehicle.fuelEntries;
+
+      // Calculate all cost components for this vehicle
+      const vehicleFuelCost = entries.reduce((sum, e) => sum + e.cost, 0);
+      const vehicleMaintenanceCost = vehicle.maintenanceEntries.reduce((sum, e) => sum + e.cost, 0);
+      const vehicleRoadTaxCost = vehicle.roadTaxEntries.reduce((sum, e) => sum + e.cost, 0);
+      const vehicleInsuranceCost = vehicle.insuranceEntries.reduce((sum, e) => sum + e.cost, 0);
+
+      // Calculate financing cost
+      let vehicleFinancingCost = 0;
+      if (vehicle.financingTotalAmount) {
+        vehicleFinancingCost = vehicle.financingTotalAmount;
+      } else if (vehicle.financingMonthlyPayment && vehicle.financingStartDate) {
+        const startDate = new Date(vehicle.financingStartDate);
+        const endDate = vehicle.financingEndDate ? new Date(vehicle.financingEndDate) : new Date();
+        const months = Math.max(0, (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth()));
+        vehicleFinancingCost = vehicle.financingMonthlyPayment * months;
+      }
+
+      // Calculate depreciation
+      let vehicleDepreciation = 0;
+      if (vehicle.soldDate && vehicle.purchasePrice) {
+        vehicleDepreciation = vehicle.purchasePrice - (vehicle.soldPrice || 0);
+      } else if (vehicle.depreciationYearly && vehicle.purchaseDate) {
+        const yearsOwned = (new Date() - new Date(vehicle.purchaseDate)) / (1000 * 60 * 60 * 24 * 365.25);
+        vehicleDepreciation = vehicle.depreciationYearly * yearsOwned;
+      }
+
+      // Running costs = road tax + insurance + financing
+      const vehicleRunningCosts = vehicleRoadTaxCost + vehicleInsuranceCost + vehicleFinancingCost;
+
+      // Total cost = fuel + maintenance + depreciation + running costs
+      const vehicleTotalCost = vehicleFuelCost + vehicleMaintenanceCost + vehicleDepreciation + vehicleRunningCosts;
+
+      // Net cost = total cost - sale proceeds
+      const vehicleNetCost = vehicle.soldPrice ? vehicleTotalCost - vehicle.soldPrice : vehicleTotalCost;
+
       if (entries.length === 0) {
         vehicleStats.push({
           id: vehicle.id,
           totalDistance: 0,
           avgConsumption: 0,
-          costPerKm: 0
+          costPerKm: 0,
+          totalCost: Math.round(vehicleTotalCost * 100) / 100,
+          totalCostPerKm: 0
         });
         continue;
       }
@@ -75,12 +116,16 @@ module.exports = async function handler(req, res) {
 
       // Calculate vehicle-level stats
       const vehicleAvgConsumption = vehicleFuel > 0 ? vehicleDistance / vehicleFuel : 0;
-      const vehicleCostPerKm = vehicleDistance > 0 ? vehicleCost / vehicleDistance : 0;
+      const vehicleFuelCostPerKm = vehicleDistance > 0 ? vehicleCost / vehicleDistance : 0;
+      const vehicleTotalCostPerKm = vehicleDistance > 0 ? vehicleNetCost / vehicleDistance : 0;
+
       vehicleStats.push({
         id: vehicle.id,
         totalDistance: Math.round(vehicleDistance),
         avgConsumption: Math.round(vehicleAvgConsumption * 100) / 100,
-        costPerKm: Math.round(vehicleCostPerKm * 1000) / 1000
+        costPerKm: Math.round(vehicleFuelCostPerKm * 1000) / 1000,
+        totalCost: Math.round(vehicleTotalCost * 100) / 100,
+        totalCostPerKm: Math.round(vehicleTotalCostPerKm * 1000) / 1000
       });
 
       // T12M stats

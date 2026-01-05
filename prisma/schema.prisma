@@ -23,6 +23,7 @@ model Vehicle {
   make            String?
   model           String?
   year            Int?
+  photo           String?
   initialOdometer Float       @default(0)
 
   // Purchase & Initial Costs
