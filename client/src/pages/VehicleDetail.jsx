@@ -705,21 +705,15 @@ export default function VehicleDetail() {
             <p className="kpi-value text-xl">{stats.totalDepreciationToDate.toFixed(2)} <span className="text-sm text-[var(--text-muted)] font-normal">EUR</span></p>
           </div>
           <div className="kpi-card">
-            <p className="kpi-label mb-1">Total Spend</p>
-            <p className="kpi-value text-xl">{stats.totalSpend.toFixed(2)} <span className="text-sm text-[var(--text-muted)] font-normal">EUR</span></p>
+            <p className="kpi-label mb-1">Running Costs</p>
+            <p className="kpi-value text-xl">{stats.runningCosts.toFixed(2)} <span className="text-sm text-[var(--text-muted)] font-normal">EUR</span></p>
+            <p className="text-xs text-[var(--text-muted)] mt-1">Tax, Insurance, Financing</p>
           </div>
-          {vehicle.soldPrice ? (
-            <div className="kpi-card border-[var(--success)]/30">
-              <p className="kpi-label mb-1">Net Cost</p>
-              <p className="kpi-value text-xl">{stats.netCost.toFixed(2)} <span className="text-sm text-[var(--text-muted)] font-normal">EUR</span></p>
-              <p className="text-xs text-[var(--text-muted)] mt-1">After {vehicle.soldPrice.toFixed(0)} EUR sale</p>
-            </div>
-          ) : (
-            <div className="kpi-card">
-              <p className="kpi-label mb-1">Other Costs</p>
-              <p className="kpi-value text-xl">{stats.totalOtherCost.toFixed(2)} <span className="text-sm text-[var(--text-muted)] font-normal">EUR</span></p>
-            </div>
-          )}
+          <div className={`kpi-card ${vehicle.soldPrice ? 'border-[var(--success)]/30' : ''}`}>
+            <p className="kpi-label mb-1">{vehicle.soldPrice ? 'Net Cost' : 'Total Cost'}</p>
+            <p className="kpi-value text-xl">{stats.netCost.toFixed(2)} <span className="text-sm text-[var(--text-muted)] font-normal">EUR</span></p>
+            {vehicle.soldPrice && <p className="text-xs text-[var(--text-muted)] mt-1">After {vehicle.soldPrice.toFixed(0)} EUR sale</p>}
+          </div>
           <div className="kpi-card">
             <p className="kpi-label mb-1">Total Cost/km</p>
             <p className="kpi-value text-xl">{stats.totalCostPerKm.toFixed(3)} <span className="text-sm text-[var(--text-muted)] font-normal">EUR</span></p>

@@ -126,9 +126,9 @@ async function handleVehicleGet(req, res, userId, id) {
   const entries = vehicle.fuelEntries;
   let stats = {
     totalDistance: 0, totalFuel: 0, totalFuelCost: 0, avgConsumption: 0, fuelCostPerKm: 0,
-    totalMaintenanceCost: 0, totalRoadTaxCost: 0, totalInsuranceCost: 0,
+    totalMaintenanceCost: 0, totalRoadTaxCost: 0, totalInsuranceCost: 0, totalFinancingCost: 0,
     expectedDepreciation: 0, actualDepreciation: 0, totalDepreciationToDate: 0,
-    totalOtherCost: 0, totalSpend: 0, netCost: 0, totalCostPerKm: 0, costPerKm: 0, totalCost: 0
+    runningCosts: 0, totalCost: 0, netCost: 0, totalCostPerKm: 0
   };
 
   if (entries.length > 0) {
@@ -150,6 +150,16 @@ async function handleVehicleGet(req, res, userId, id) {
   stats.totalRoadTaxCost = vehicle.roadTaxEntries.reduce((sum, e) => sum + e.cost, 0);
   stats.totalInsuranceCost = vehicle.insuranceEntries.reduce((sum, e) => sum + e.cost, 0);
 
+  // Calculate financing cost
+  if (vehicle.financingTotalAmount) {
+    stats.totalFinancingCost = vehicle.financingTotalAmount;
+  } else if (vehicle.financingMonthlyPayment && vehicle.financingStartDate) {
+    const startDate = new Date(vehicle.financingStartDate);
+    const endDate = vehicle.financingEndDate ? new Date(vehicle.financingEndDate) : new Date();
+    const months = Math.max(0, (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth()));
+    stats.totalFinancingCost = vehicle.financingMonthlyPayment * months;
+  }
+
   // Calculate depreciation
   if (vehicle.soldDate && vehicle.purchasePrice) {
     // Actual depreciation when sold = purchase price - sale price
@@ -162,15 +172,17 @@ async function handleVehicleGet(req, res, userId, id) {
     stats.totalDepreciationToDate = stats.expectedDepreciation;
   }
 
-  stats.totalOtherCost = stats.totalMaintenanceCost + stats.totalRoadTaxCost + stats.totalInsuranceCost + stats.totalDepreciationToDate;
-  stats.totalSpend = stats.totalFuelCost + stats.totalOtherCost;
+  // Running costs = road tax + insurance + financing (fixed/recurring costs)
+  stats.runningCosts = stats.totalRoadTaxCost + stats.totalInsuranceCost + stats.totalFinancingCost;
 
-  // Net cost accounts for sale proceeds
-  stats.netCost = vehicle.soldPrice ? stats.totalSpend - vehicle.soldPrice : stats.totalSpend;
+  // Total cost = ALL cost components (fuel + maintenance + depreciation + running costs)
+  stats.totalCost = stats.totalFuelCost + stats.totalMaintenanceCost + stats.totalDepreciationToDate + stats.runningCosts;
 
-  stats.totalCostPerKm = stats.totalDistance > 0 ? stats.totalSpend / stats.totalDistance : 0;
-  stats.costPerKm = stats.totalCostPerKm;
-  stats.totalCost = stats.totalFuelCost;
+  // Net cost = total cost minus sale proceeds (if sold)
+  stats.netCost = vehicle.soldPrice ? stats.totalCost - vehicle.soldPrice : stats.totalCost;
+
+  // Cost per km based on net cost
+  stats.totalCostPerKm = stats.totalDistance > 0 ? stats.netCost / stats.totalDistance : 0;
 
   return res.json({ ...vehicle, status, stats });
 }
