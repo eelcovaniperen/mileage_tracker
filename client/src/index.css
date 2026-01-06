@@ -9,13 +9,14 @@
   - Electric blue accents
 */
 
-:root {
+:root, [data-theme="dark"] {
   /* Backgrounds - ultra dark with subtle layering */
   --bg-primary: #09090b;
   --bg-secondary: #0c0c0f;
   --bg-card: #111114;
   --bg-elevated: #161619;
   --bg-hover: #1a1a1e;
+  --bg-tertiary: #1a1a1e;
 
   /* Text - high contrast whites */
   --text-primary: #fafafa;
@@ -39,6 +40,40 @@
   --danger: #ef4444;
   --danger-muted: rgba(239, 68, 68, 0.1);
   --warning: #f59e0b;
+}
+
+/* Light Theme */
+[data-theme="light"] {
+  /* Backgrounds - clean whites and grays */
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-hover: #e2e8f0;
+  --bg-tertiary: #e2e8f0;
+
+  /* Text - dark grays */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+
+  /* Accent - same blue, adjusted for light */
+  --accent-primary: #2563eb;
+  --accent-secondary: #3b82f6;
+  --accent-muted: #1d4ed8;
+  --accent-glow: rgba(37, 99, 235, 0.1);
+  --accent-subtle: rgba(37, 99, 235, 0.05);
+
+  /* Borders - subtle grays */
+  --border-color: #e2e8f0;
+  --border-hover: #cbd5e1;
+
+  /* Status - slightly adjusted for light bg */
+  --success: #16a34a;
+  --success-muted: rgba(22, 163, 74, 0.1);
+  --danger: #dc2626;
+  --danger-muted: rgba(220, 38, 38, 0.1);
+  --warning: #d97706;
 }
 
 * {

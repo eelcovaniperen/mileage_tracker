@@ -42,6 +42,20 @@ export default function VehicleDetail() {
   const [editingInsurance, setEditingInsurance] = useState(null);
   const [activeTab, setActiveTab] = useState('fuel');
 
+  // Quick-add mode (minimal fields)
+  const [quickAddMode, setQuickAddMode] = useState(false);
+
+  // Bulk selection
+  const [selectedFuelEntries, setSelectedFuelEntries] = useState([]);
+  const [selectedMaintenanceEntries, setSelectedMaintenanceEntries] = useState([]);
+
+  // Date filters
+  const [dateFilter, setDateFilter] = useState({ start: '', end: '' });
+
+  // Bulk selection for road tax and insurance
+  const [selectedRoadTaxEntries, setSelectedRoadTaxEntries] = useState([]);
+  const [selectedInsuranceEntries, setSelectedInsuranceEntries] = useState([]);
+
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     odometer: '',
@@ -214,6 +228,58 @@ export default function VehicleDetail() {
     }
   };
 
+  // Duplicate fuel entry
+  const handleDuplicateFuelEntry = (entry) => {
+    setFormData({
+      date: new Date().toISOString().split('T')[0],
+      odometer: '',
+      fuelAmount: entry.fuelAmount,
+      cost: entry.cost,
+      fullTank: entry.fullTank,
+      notes: entry.notes || '',
+      gasStation: entry.gasStation || '',
+      tripDistance: entry.tripDistance || '',
+      pricePerLiter: entry.pricePerLiter || '',
+      tyres: entry.tyres || ''
+    });
+    setEditingEntry(null);
+    setShowForm(true);
+  };
+
+  // Bulk delete fuel entries
+  const handleBulkDeleteFuel = async () => {
+    if (selectedFuelEntries.length === 0) return;
+    if (!confirm(`Delete ${selectedFuelEntries.length} fuel entries?`)) return;
+    try {
+      for (const entryId of selectedFuelEntries) {
+        await deleteFuelEntry(entryId);
+      }
+      setSelectedFuelEntries([]);
+      loadVehicle();
+    } catch (err) {
+      console.error('Failed to bulk delete entries:', err);
+    }
+  };
+
+  // Toggle fuel entry selection
+  const toggleFuelSelection = (entryId) => {
+    setSelectedFuelEntries(prev =>
+      prev.includes(entryId)
+        ? prev.filter(id => id !== entryId)
+        : [...prev, entryId]
+    );
+  };
+
+  // Select all fuel entries
+  const toggleAllFuelSelection = () => {
+    const filteredEntries = getFilteredFuelEntries();
+    if (selectedFuelEntries.length === filteredEntries.length) {
+      setSelectedFuelEntries([]);
+    } else {
+      setSelectedFuelEntries(filteredEntries.map(e => e.id));
+    }
+  };
+
   // Maintenance entry handlers
   const handleMaintenanceSubmit = async (e) => {
     e.preventDefault();
@@ -277,6 +343,56 @@ export default function VehicleDetail() {
       loadVehicle();
     } catch (err) {
       console.error('Failed to delete maintenance entry:', err);
+    }
+  };
+
+  // Duplicate maintenance entry
+  const handleDuplicateMaintenanceEntry = (entry) => {
+    setMaintenanceFormData({
+      date: new Date().toISOString().split('T')[0],
+      odometer: '',
+      description: entry.description,
+      cost: entry.cost,
+      category: entry.category,
+      invoiceNumber: '',
+      serviceProvider: entry.serviceProvider || '',
+      notes: entry.notes || ''
+    });
+    setEditingMaintenance(null);
+    setShowMaintenanceForm(true);
+  };
+
+  // Bulk delete maintenance entries
+  const handleBulkDeleteMaintenance = async () => {
+    if (selectedMaintenanceEntries.length === 0) return;
+    if (!confirm(`Delete ${selectedMaintenanceEntries.length} maintenance entries?`)) return;
+    try {
+      for (const entryId of selectedMaintenanceEntries) {
+        await deleteMaintenanceEntry(entryId);
+      }
+      setSelectedMaintenanceEntries([]);
+      loadVehicle();
+    } catch (err) {
+      console.error('Failed to bulk delete maintenance entries:', err);
+    }
+  };
+
+  // Toggle maintenance entry selection
+  const toggleMaintenanceSelection = (entryId) => {
+    setSelectedMaintenanceEntries(prev =>
+      prev.includes(entryId)
+        ? prev.filter(id => id !== entryId)
+        : [...prev, entryId]
+    );
+  };
+
+  // Select all maintenance entries
+  const toggleAllMaintenanceSelection = () => {
+    const filteredEntries = getFilteredMaintenanceEntries();
+    if (selectedMaintenanceEntries.length === filteredEntries.length) {
+      setSelectedMaintenanceEntries([]);
+    } else {
+      setSelectedMaintenanceEntries(filteredEntries.map(e => e.id));
     }
   };
 
@@ -415,6 +531,34 @@ export default function VehicleDetail() {
     } finally {
       setSaving(false);
     }
+  };
+
+  // Date filtering functions
+  const getFilteredFuelEntries = () => {
+    if (!vehicle?.fuelEntries) return [];
+    return vehicle.fuelEntries.filter(entry => {
+      const entryDate = new Date(entry.date);
+      if (dateFilter.start && entryDate < new Date(dateFilter.start)) return false;
+      if (dateFilter.end && entryDate > new Date(dateFilter.end)) return false;
+      return true;
+    });
+  };
+
+  const getFilteredMaintenanceEntries = () => {
+    if (!vehicle?.maintenanceEntries) return [];
+    return vehicle.maintenanceEntries.filter(entry => {
+      const entryDate = new Date(entry.date);
+      if (dateFilter.start && entryDate < new Date(dateFilter.start)) return false;
+      if (dateFilter.end && entryDate > new Date(dateFilter.end)) return false;
+      return true;
+    });
+  };
+
+  // Clear date filter
+  const clearDateFilter = () => {
+    setDateFilter({ start: '', end: '' });
+    setSelectedFuelEntries([]);
+    setSelectedMaintenanceEntries([]);
   };
 
   // Get current form visibility and toggle function based on active tab
@@ -740,19 +884,35 @@ export default function VehicleDetail() {
       {/* Fuel Entry Form */}
       {activeTab === 'fuel' && showForm && (
         <div className="glass-card p-6 mb-8 animate-fade-in">
-          <h2 className="section-header mb-6">{editingEntry ? 'Edit Fuel Entry' : 'Add Fuel Entry'}</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="section-header">{editingEntry ? 'Edit Fuel Entry' : 'Add Fuel Entry'}</h2>
+            {!editingEntry && (
+              <label className="flex items-center gap-2 cursor-pointer text-sm">
+                <input
+                  type="checkbox"
+                  checked={quickAddMode}
+                  onChange={(e) => setQuickAddMode(e.target.checked)}
+                />
+                <span className="text-[var(--text-secondary)]">Quick add</span>
+              </label>
+            )}
+          </div>
           {error && <div className="mb-6 p-3 rounded-lg bg-[var(--danger-muted)] border border-[var(--danger)]/20 text-[var(--danger)] text-sm">{error}</div>}
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div><label className="input-label">Date</label><input type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="input-field" required /></div>
             <div><label className="input-label">Odometer (km)</label><input type="number" value={formData.odometer} onChange={(e) => setFormData({ ...formData, odometer: e.target.value })} className="input-field" required step="0.1" /></div>
             <div><label className="input-label">Fuel Amount (L)</label><input type="number" value={formData.fuelAmount} onChange={(e) => setFormData({ ...formData, fuelAmount: e.target.value })} className="input-field" required step="0.01" /></div>
             <div><label className="input-label">Cost (EUR)</label><input type="number" value={formData.cost} onChange={(e) => setFormData({ ...formData, cost: e.target.value })} className="input-field" required step="0.01" /></div>
-            <div><label className="input-label">Gas Station</label><input type="text" value={formData.gasStation} onChange={(e) => setFormData({ ...formData, gasStation: e.target.value })} className="input-field" /></div>
-            <div><label className="input-label">Trip Distance (km)</label><input type="number" value={formData.tripDistance} onChange={(e) => setFormData({ ...formData, tripDistance: e.target.value })} className="input-field" step="0.1" /></div>
-            <div><label className="input-label">Price/Liter</label><input type="number" value={formData.pricePerLiter} onChange={(e) => setFormData({ ...formData, pricePerLiter: e.target.value })} className="input-field" step="0.001" /></div>
-            <div><label className="input-label">Tyres</label><input type="text" value={formData.tyres} onChange={(e) => setFormData({ ...formData, tyres: e.target.value })} className="input-field" /></div>
-            <div className="md:col-span-2"><label className="input-label">Notes</label><input type="text" value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} className="input-field" /></div>
-            <div className="flex items-end gap-4 md:col-span-2">
+            {!quickAddMode && (
+              <>
+                <div><label className="input-label">Gas Station</label><input type="text" value={formData.gasStation} onChange={(e) => setFormData({ ...formData, gasStation: e.target.value })} className="input-field" /></div>
+                <div><label className="input-label">Trip Distance (km)</label><input type="number" value={formData.tripDistance} onChange={(e) => setFormData({ ...formData, tripDistance: e.target.value })} className="input-field" step="0.1" /></div>
+                <div><label className="input-label">Price/Liter</label><input type="number" value={formData.pricePerLiter} onChange={(e) => setFormData({ ...formData, pricePerLiter: e.target.value })} className="input-field" step="0.001" /></div>
+                <div><label className="input-label">Tyres</label><input type="text" value={formData.tyres} onChange={(e) => setFormData({ ...formData, tyres: e.target.value })} className="input-field" /></div>
+                <div className="md:col-span-2"><label className="input-label">Notes</label><input type="text" value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} className="input-field" /></div>
+              </>
+            )}
+            <div className={`flex items-end gap-4 ${quickAddMode ? '' : 'md:col-span-2'}`}>
               <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={formData.fullTank} onChange={(e) => setFormData({ ...formData, fullTank: e.target.checked })} /><span className="text-[var(--text-secondary)] text-sm">Full tank</span></label>
               <button type="submit" disabled={saving} className="btn-primary flex-1">{saving ? 'Saving...' : (editingEntry ? 'Update Entry' : 'Save Entry')}</button>
             </div>
@@ -815,15 +975,63 @@ export default function VehicleDetail() {
       {/* Fuel Entries Table */}
       {activeTab === 'fuel' && (
         <div className="glass-card overflow-hidden">
-          <div className="p-5 border-b border-[var(--border-color)]"><h2 className="section-header">Fuel History</h2></div>
+          <div className="p-5 border-b border-[var(--border-color)]">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <h2 className="section-header">Fuel History</h2>
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Date Filters */}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={dateFilter.start}
+                    onChange={(e) => setDateFilter({ ...dateFilter, start: e.target.value })}
+                    className="input-field text-xs py-1.5 px-2"
+                    placeholder="From"
+                  />
+                  <span className="text-[var(--text-muted)]">to</span>
+                  <input
+                    type="date"
+                    value={dateFilter.end}
+                    onChange={(e) => setDateFilter({ ...dateFilter, end: e.target.value })}
+                    className="input-field text-xs py-1.5 px-2"
+                  />
+                  {(dateFilter.start || dateFilter.end) && (
+                    <button onClick={clearDateFilter} className="text-xs text-[var(--text-muted)] hover:text-[var(--accent-secondary)]">
+                      Clear
+                    </button>
+                  )}
+                </div>
+                {/* Bulk Delete Button */}
+                {selectedFuelEntries.length > 0 && (
+                  <button onClick={handleBulkDeleteFuel} className="btn-danger text-xs py-1.5 px-3 flex items-center gap-1">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Delete ({selectedFuelEntries.length})
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="data-table">
-              <thead><tr><th>Date</th><th>Odometer</th><th>Trip</th><th>Fuel</th><th>Cost</th><th>km/L</th><th>Station</th><th>Price/L</th><th>Tyres</th><th></th></tr></thead>
+              <thead>
+                <tr>
+                  <th className="w-8">
+                    <input
+                      type="checkbox"
+                      checked={selectedFuelEntries.length === getFilteredFuelEntries().length && getFilteredFuelEntries().length > 0}
+                      onChange={toggleAllFuelSelection}
+                    />
+                  </th>
+                  <th>Date</th><th>Odometer</th><th>Trip</th><th>Fuel</th><th>Cost</th><th>km/L</th><th>Station</th><th>Price/L</th><th>Tyres</th><th></th>
+                </tr>
+              </thead>
               <tbody>
-                {vehicle.fuelEntries.length === 0 ? (
-                  <tr><td colSpan="10" className="text-center py-12"><div className="text-[var(--text-muted)]"><p className="text-sm">No fuel entries yet</p></div></td></tr>
+                {getFilteredFuelEntries().length === 0 ? (
+                  <tr><td colSpan="11" className="text-center py-12"><div className="text-[var(--text-muted)]"><p className="text-sm">{dateFilter.start || dateFilter.end ? 'No entries in this date range' : 'No fuel entries yet'}</p></div></td></tr>
                 ) : (
-                  [...vehicle.fuelEntries].reverse().map((entry, index, arr) => {
+                  [...getFilteredFuelEntries()].reverse().map((entry, index, arr) => {
                     const prevEntry = arr[index + 1];
                     let consumption = null;
                     if (entry.tripDistance && entry.tripDistance > 0 && entry.fuelAmount > 0) {
@@ -833,7 +1041,14 @@ export default function VehicleDetail() {
                       if (distance > 0 && entry.fuelAmount > 0) consumption = distance / entry.fuelAmount;
                     }
                     return (
-                      <tr key={entry.id}>
+                      <tr key={entry.id} className={selectedFuelEntries.includes(entry.id) ? 'bg-[var(--accent-subtle)]' : ''}>
+                        <td>
+                          <input
+                            type="checkbox"
+                            checked={selectedFuelEntries.includes(entry.id)}
+                            onChange={() => toggleFuelSelection(entry.id)}
+                          />
+                        </td>
                         <td>{new Date(entry.date).toLocaleDateString()}</td>
                         <td>{entry.odometer.toLocaleString()} km</td>
                         <td className="text-[var(--text-muted)]">{entry.tripDistance ? `${entry.tripDistance.toFixed(1)} km` : '-'}</td>
@@ -843,7 +1058,25 @@ export default function VehicleDetail() {
                         <td className="text-[var(--text-muted)]">{entry.gasStation || '-'}</td>
                         <td className="text-[var(--text-muted)]">{entry.pricePerLiter ? `${entry.pricePerLiter.toFixed(3)}` : '-'}</td>
                         <td className="text-[var(--text-muted)]">{entry.tyres || '-'}</td>
-                        <td><div className="flex gap-1"><button onClick={() => handleEditEntry(entry)} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--accent-secondary)] transition-colors" title="Edit"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button><button onClick={() => handleDelete(entry.id)} className="btn-danger p-1.5" title="Delete"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button></div></td>
+                        <td>
+                          <div className="flex gap-1">
+                            <button onClick={() => handleDuplicateFuelEntry(entry)} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--success)] transition-colors" title="Duplicate">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                            </button>
+                            <button onClick={() => handleEditEntry(entry)} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--accent-secondary)] transition-colors" title="Edit">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                            <button onClick={() => handleDelete(entry.id)} className="btn-danger p-1.5" title="Delete">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     );
                   })
@@ -857,18 +1090,73 @@ export default function VehicleDetail() {
       {/* Maintenance Entries Table */}
       {activeTab === 'maintenance' && (
         <div className="glass-card overflow-hidden">
-          <div className="p-5 border-b border-[var(--border-color)]"><h2 className="section-header">Maintenance History</h2></div>
+          <div className="p-5 border-b border-[var(--border-color)]">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <h2 className="section-header">Maintenance History</h2>
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Date Filters */}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={dateFilter.start}
+                    onChange={(e) => setDateFilter({ ...dateFilter, start: e.target.value })}
+                    className="input-field text-xs py-1.5 px-2"
+                    placeholder="From"
+                  />
+                  <span className="text-[var(--text-muted)]">to</span>
+                  <input
+                    type="date"
+                    value={dateFilter.end}
+                    onChange={(e) => setDateFilter({ ...dateFilter, end: e.target.value })}
+                    className="input-field text-xs py-1.5 px-2"
+                  />
+                  {(dateFilter.start || dateFilter.end) && (
+                    <button onClick={clearDateFilter} className="text-xs text-[var(--text-muted)] hover:text-[var(--accent-secondary)]">
+                      Clear
+                    </button>
+                  )}
+                </div>
+                {/* Bulk Delete Button */}
+                {selectedMaintenanceEntries.length > 0 && (
+                  <button onClick={handleBulkDeleteMaintenance} className="btn-danger text-xs py-1.5 px-3 flex items-center gap-1">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Delete ({selectedMaintenanceEntries.length})
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="data-table">
-              <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Cost</th><th>Odometer</th><th>Provider</th><th>Invoice</th><th></th></tr></thead>
+              <thead>
+                <tr>
+                  <th className="w-8">
+                    <input
+                      type="checkbox"
+                      checked={selectedMaintenanceEntries.length === getFilteredMaintenanceEntries().length && getFilteredMaintenanceEntries().length > 0}
+                      onChange={toggleAllMaintenanceSelection}
+                    />
+                  </th>
+                  <th>Date</th><th>Category</th><th>Description</th><th>Cost</th><th>Odometer</th><th>Provider</th><th>Invoice</th><th></th>
+                </tr>
+              </thead>
               <tbody>
-                {(!vehicle.maintenanceEntries || vehicle.maintenanceEntries.length === 0) ? (
-                  <tr><td colSpan="8" className="text-center py-12"><div className="text-[var(--text-muted)]"><p className="text-sm">No maintenance entries yet</p></div></td></tr>
+                {getFilteredMaintenanceEntries().length === 0 ? (
+                  <tr><td colSpan="9" className="text-center py-12"><div className="text-[var(--text-muted)]"><p className="text-sm">{dateFilter.start || dateFilter.end ? 'No entries in this date range' : 'No maintenance entries yet'}</p></div></td></tr>
                 ) : (
-                  vehicle.maintenanceEntries.map((entry) => {
+                  getFilteredMaintenanceEntries().map((entry) => {
                     const category = MAINTENANCE_CATEGORIES.find(c => c.value === entry.category);
                     return (
-                      <tr key={entry.id}>
+                      <tr key={entry.id} className={selectedMaintenanceEntries.includes(entry.id) ? 'bg-[var(--accent-subtle)]' : ''}>
+                        <td>
+                          <input
+                            type="checkbox"
+                            checked={selectedMaintenanceEntries.includes(entry.id)}
+                            onChange={() => toggleMaintenanceSelection(entry.id)}
+                          />
+                        </td>
                         <td>{new Date(entry.date).toLocaleDateString()}</td>
                         <td><span className="px-2 py-1 rounded-md text-xs font-medium bg-[var(--accent-subtle)] text-[var(--accent-secondary)]">{category?.label || entry.category}</span></td>
                         <td>{entry.description}</td>
@@ -876,7 +1164,25 @@ export default function VehicleDetail() {
                         <td className="text-[var(--text-muted)]">{entry.odometer ? `${entry.odometer.toLocaleString()} km` : '-'}</td>
                         <td className="text-[var(--text-muted)]">{entry.serviceProvider || '-'}</td>
                         <td className="text-[var(--text-muted)]">{entry.invoiceNumber || '-'}</td>
-                        <td><div className="flex gap-1"><button onClick={() => handleEditMaintenance(entry)} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--accent-secondary)] transition-colors" title="Edit"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button><button onClick={() => handleDeleteMaintenance(entry.id)} className="btn-danger p-1.5" title="Delete"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button></div></td>
+                        <td>
+                          <div className="flex gap-1">
+                            <button onClick={() => handleDuplicateMaintenanceEntry(entry)} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--success)] transition-colors" title="Duplicate">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                            </button>
+                            <button onClick={() => handleEditMaintenance(entry)} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--accent-secondary)] transition-colors" title="Edit">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                            <button onClick={() => handleDeleteMaintenance(entry.id)} className="btn-danger p-1.5" title="Delete">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     );
                   })
