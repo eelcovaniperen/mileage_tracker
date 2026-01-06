@@ -289,6 +289,8 @@ DriveTotal is a full-stack web application for tracking vehicle expenses, fuel c
 - [ ] OCR for automatic data extraction
 - [ ] Quick-add fuel entry (minimal fields)
 - [ ] Recurring maintenance templates
+- [ ] Recurring road tax templates
+- [ ] Recurring insurance templates
 
 #### Mobile Experience
 - [ ] Progressive Web App (PWA)
