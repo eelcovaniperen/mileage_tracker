@@ -454,6 +454,22 @@ export default function VehicleDetail() {
     }
   };
 
+  // Duplicate road tax entry
+  const handleDuplicateRoadTaxEntry = (entry) => {
+    const startDate = new Date();
+    const endDate = new Date(startDate);
+    endDate.setFullYear(endDate.getFullYear() + 1);
+
+    setRoadTaxFormData({
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: endDate.toISOString().split('T')[0],
+      cost: entry.cost,
+      notes: entry.notes || ''
+    });
+    setEditingRoadTax(null);
+    setShowRoadTaxForm(true);
+  };
+
   // Insurance entry handlers
   const handleInsuranceSubmit = async (e) => {
     e.preventDefault();
@@ -516,6 +532,25 @@ export default function VehicleDetail() {
     } catch (err) {
       console.error('Failed to delete insurance entry:', err);
     }
+  };
+
+  // Duplicate insurance entry
+  const handleDuplicateInsuranceEntry = (entry) => {
+    const startDate = new Date();
+    const endDate = new Date(startDate);
+    endDate.setFullYear(endDate.getFullYear() + 1);
+
+    setInsuranceFormData({
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: endDate.toISOString().split('T')[0],
+      cost: entry.cost,
+      provider: entry.provider || '',
+      policyNumber: '',
+      coverage: entry.coverage || 'comprehensive',
+      notes: entry.notes || ''
+    });
+    setEditingInsurance(null);
+    setShowInsuranceForm(true);
   };
 
   // Vehicle update handler
@@ -1209,7 +1244,25 @@ export default function VehicleDetail() {
                       <td>{new Date(entry.startDate).toLocaleDateString()} - {new Date(entry.endDate).toLocaleDateString()}</td>
                       <td>{entry.cost.toFixed(2)} EUR</td>
                       <td className="text-[var(--text-muted)]">{entry.notes || '-'}</td>
-                      <td><div className="flex gap-1"><button onClick={() => handleEditRoadTax(entry)} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--accent-secondary)] transition-colors" title="Edit"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button><button onClick={() => handleDeleteRoadTax(entry.id)} className="btn-danger p-1.5" title="Delete"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button></div></td>
+                      <td>
+                        <div className="flex gap-1">
+                          <button onClick={() => handleDuplicateRoadTaxEntry(entry)} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--success)] transition-colors" title="Duplicate">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                          </button>
+                          <button onClick={() => handleEditRoadTax(entry)} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--accent-secondary)] transition-colors" title="Edit">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button onClick={() => handleDeleteRoadTax(entry.id)} className="btn-danger p-1.5" title="Delete">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -1240,7 +1293,25 @@ export default function VehicleDetail() {
                         <td className="text-[var(--text-muted)]">{entry.provider || '-'}</td>
                         <td className="text-[var(--text-muted)]">{entry.policyNumber || '-'}</td>
                         <td className="text-[var(--text-muted)]">{entry.notes || '-'}</td>
-                        <td><div className="flex gap-1"><button onClick={() => handleEditInsurance(entry)} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--accent-secondary)] transition-colors" title="Edit"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button><button onClick={() => handleDeleteInsurance(entry.id)} className="btn-danger p-1.5" title="Delete"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button></div></td>
+                        <td>
+                          <div className="flex gap-1">
+                            <button onClick={() => handleDuplicateInsuranceEntry(entry)} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--success)] transition-colors" title="Duplicate">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                            </button>
+                            <button onClick={() => handleEditInsurance(entry)} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--accent-secondary)] transition-colors" title="Edit">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                            <button onClick={() => handleDeleteInsurance(entry.id)} className="btn-danger p-1.5" title="Delete">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     );
                   })
