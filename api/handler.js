@@ -1,12 +1,28 @@
 const bcrypt = require('bcryptjs');
 const prisma = require('../lib/prisma');
 const { generateToken, verifyToken } = require('../lib/auth');
+const { checkAuthRateLimit, checkApiRateLimit, getClientIp } = require('../lib/rateLimit');
+const { validateEmail, validatePassword, sanitizeString } = require('../lib/validation');
 
-function setCorsHeaders(res) {
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
+// Allowed origins for CORS
+const ALLOWED_ORIGINS = [
+  'https://mileagetracker-lac.vercel.app',
+  'https://drivetotal.vercel.app',
+  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+  process.env.NODE_ENV === 'development' ? 'http://localhost:5173' : null
+].filter(Boolean);
+
+function setCorsHeaders(req, res) {
+  const origin = req.headers.origin;
+
+  // Check if origin is allowed (also allow same-origin requests with no origin header)
+  if (!origin || ALLOWED_ORIGINS.includes(origin) || origin.endsWith('.vercel.app')) {
+    res.setHeader('Access-Control-Allow-Origin', origin || ALLOWED_ORIGINS[0]);
+  }
+
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Accept, Accept-Version, Content-Length, Content-Type, Authorization');
 }
 
 // ============ AUTH HANDLERS ============
@@ -16,8 +32,15 @@ async function handleLogin(req, res) {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
 
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+  // Normalize email
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+  if (!user) {
+    // Constant-time comparison to prevent timing attacks
+    await bcrypt.compare(password, '$2a$12$dummy.hash.for.timing.attack.prevention');
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
 
   const validPassword = await bcrypt.compare(password, user.password);
   if (!validPassword) return res.status(401).json({ error: 'Invalid credentials' });
@@ -30,13 +53,38 @@ async function handleRegister(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { email, password, name } = req.body;
-  if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
 
-  const existingUser = await prisma.user.findUnique({ where: { email } });
-  if (existingUser) return res.status(400).json({ error: 'Email already registered' });
+  // Validate email
+  const emailValidation = validateEmail(email);
+  if (!emailValidation.valid) {
+    return res.status(400).json({ error: emailValidation.error });
+  }
 
-  const hashedPassword = await bcrypt.hash(password, 10);
-  const user = await prisma.user.create({ data: { email, password: hashedPassword, name } });
+  // Validate password
+  const passwordValidation = validatePassword(password);
+  if (!passwordValidation.valid) {
+    return res.status(400).json({ error: passwordValidation.error });
+  }
+
+  // Sanitize name
+  const sanitizedName = sanitizeString(name, 100);
+
+  // Check for existing user - use generic error to prevent enumeration
+  const existingUser = await prisma.user.findUnique({ where: { email: emailValidation.normalized } });
+  if (existingUser) {
+    // Return same response time to prevent timing attacks
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 100));
+    return res.status(400).json({ error: 'Unable to create account. Please try a different email.' });
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 12); // Increased cost factor
+  const user = await prisma.user.create({
+    data: {
+      email: emailValidation.normalized,
+      password: hashedPassword,
+      name: sanitizedName
+    }
+  });
   const token = generateToken(user.id);
 
   res.status(201).json({ user: { id: user.id, email: user.email, name: user.name }, token });
@@ -61,17 +109,35 @@ async function handleProfile(req, res, userId) {
   if (!user) return res.status(404).json({ error: 'User not found' });
 
   const updateData = {};
-  if (name !== undefined) updateData.name = name;
-  if (email && email !== user.email) {
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) return res.status(400).json({ error: 'Email already in use' });
-    updateData.email = email;
+
+  // Sanitize and validate name
+  if (name !== undefined) {
+    updateData.name = sanitizeString(name, 100);
   }
+
+  // Validate and update email
+  if (email && email !== user.email) {
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.valid) {
+      return res.status(400).json({ error: emailValidation.error });
+    }
+    const existingUser = await prisma.user.findUnique({ where: { email: emailValidation.normalized } });
+    if (existingUser) return res.status(400).json({ error: 'Email already in use' });
+    updateData.email = emailValidation.normalized;
+  }
+
+  // Validate and update password
   if (newPassword) {
     if (!currentPassword) return res.status(400).json({ error: 'Current password is required to change password' });
+
+    const passwordValidation = validatePassword(newPassword);
+    if (!passwordValidation.valid) {
+      return res.status(400).json({ error: passwordValidation.error });
+    }
+
     const isValidPassword = await bcrypt.compare(currentPassword, user.password);
     if (!isValidPassword) return res.status(400).json({ error: 'Current password is incorrect' });
-    updateData.password = await bcrypt.hash(newPassword, 10);
+    updateData.password = await bcrypt.hash(newPassword, 12);
   }
 
   const updatedUser = await prisma.user.update({
@@ -414,8 +480,10 @@ async function handleInsuranceEntryDelete(req, res, userId, id) {
 
 // ============ MAIN ROUTER ============
 module.exports = async function handler(req, res) {
-  setCorsHeaders(res);
+  setCorsHeaders(req, res);
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  const clientIp = getClientIp(req);
 
   try {
     // Parse path from URL (e.g., /api/auth/login -> ['auth', 'login'])
@@ -425,6 +493,20 @@ module.exports = async function handler(req, res) {
 
     // Auth routes (no auth required for login/register)
     if (resource === 'auth') {
+      // Apply stricter rate limiting for auth endpoints
+      if (idOrAction === 'login' || idOrAction === 'register') {
+        const rateLimit = checkAuthRateLimit(clientIp);
+        res.setHeader('X-RateLimit-Remaining', rateLimit.remaining);
+        res.setHeader('X-RateLimit-Reset', Math.ceil(rateLimit.resetIn / 1000));
+
+        if (!rateLimit.success) {
+          return res.status(429).json({
+            error: 'Too many attempts. Please try again later.',
+            retryAfter: Math.ceil(rateLimit.resetIn / 1000)
+          });
+        }
+      }
+
       if (idOrAction === 'login') return handleLogin(req, res);
       if (idOrAction === 'register') return handleRegister(req, res);
 
@@ -439,6 +521,18 @@ module.exports = async function handler(req, res) {
     // All other routes require authentication
     const userId = verifyToken(req);
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    // Apply general rate limiting for authenticated requests
+    const apiRateLimit = checkApiRateLimit(userId);
+    res.setHeader('X-RateLimit-Remaining', apiRateLimit.remaining);
+    res.setHeader('X-RateLimit-Reset', Math.ceil(apiRateLimit.resetIn / 1000));
+
+    if (!apiRateLimit.success) {
+      return res.status(429).json({
+        error: 'Rate limit exceeded. Please slow down.',
+        retryAfter: Math.ceil(apiRateLimit.resetIn / 1000)
+      });
+    }
 
     // Vehicles
     if (resource === 'vehicles') {

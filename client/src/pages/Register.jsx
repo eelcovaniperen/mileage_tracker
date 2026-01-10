@@ -90,10 +90,11 @@ export default function Register() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="input-field"
-                placeholder="Min. 6 characters"
+                placeholder="Min. 8 chars, letter + number"
                 required
-                minLength={6}
+                minLength={8}
               />
+              <p className="text-xs text-[var(--text-muted)] mt-1">At least 8 characters with letters and numbers</p>
             </div>
 
             <button

@@ -1,11 +1,26 @@
 const prisma = require('../../lib/prisma');
 const { verifyToken } = require('../../lib/auth');
 
+// Allowed origins for CORS
+const ALLOWED_ORIGINS = [
+  'https://mileagetracker-lac.vercel.app',
+  'https://drivetotal.vercel.app',
+  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+  process.env.NODE_ENV === 'development' ? 'http://localhost:5173' : null
+].filter(Boolean);
+
+function setCorsHeaders(req, res) {
+  const origin = req.headers.origin;
+  if (!origin || ALLOWED_ORIGINS.includes(origin) || origin.endsWith('.vercel.app')) {
+    res.setHeader('Access-Control-Allow-Origin', origin || ALLOWED_ORIGINS[0]);
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Accept, Content-Type, Authorization');
+}
+
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
+  setCorsHeaders(req, res);
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
