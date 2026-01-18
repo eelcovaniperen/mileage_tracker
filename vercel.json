@@ -39,6 +39,7 @@
     { "source": "/api/road-tax-entries", "destination": "/api/handler" },
     { "source": "/api/insurance-entries/:path*", "destination": "/api/handler" },
     { "source": "/api/insurance-entries", "destination": "/api/handler" },
+    { "source": "/api/recent-activity", "destination": "/api/handler" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

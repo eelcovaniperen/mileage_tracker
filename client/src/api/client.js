@@ -61,4 +61,11 @@ export const deleteInsuranceEntry = (id) => api.delete(`/insurance-entries/${id}
 // Dashboard
 export const getDashboardStats = () => api.get('/dashboard/stats');
 
+// Recent Activity
+export const getRecentActivity = (limit = 50, type = null) => {
+  const params = new URLSearchParams({ limit });
+  if (type) params.append('type', type);
+  return api.get(`/recent-activity?${params}`);
+};
+
 export default api;

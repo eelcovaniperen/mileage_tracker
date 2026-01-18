@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { getVehicles, createVehicle, deleteVehicle, updateVehicle, getDashboardStats } from '../api/client';
+import { getVehicles, createVehicle, deleteVehicle, updateVehicle, getDashboardStats, getRecentActivity } from '../api/client';
 
 export default function Vehicles() {
   const [vehicles, setVehicles] = useState([]);
@@ -18,10 +18,20 @@ export default function Vehicles() {
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(null);
   const fileInputRef = useRef(null);
+  const [activeTab, setActiveTab] = useState('vehicles');
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [activityLoading, setActivityLoading] = useState(false);
+  const [activityFilter, setActivityFilter] = useState(null); // null = all, 'fuel', 'maintenance'
 
   useEffect(() => {
     loadVehicles();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'activity') {
+      loadRecentActivity();
+    }
+  }, [activeTab, activityFilter]);
 
   const loadVehicles = async () => {
     try {
@@ -35,6 +45,18 @@ export default function Vehicles() {
       console.error('Failed to load vehicles:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadRecentActivity = async () => {
+    setActivityLoading(true);
+    try {
+      const res = await getRecentActivity(50, activityFilter);
+      setRecentActivity(res.data);
+    } catch (err) {
+      console.error('Failed to load recent activity:', err);
+    } finally {
+      setActivityLoading(false);
     }
   };
 
@@ -148,10 +170,74 @@ export default function Vehicles() {
     );
   }
 
+  const getActivityIcon = (type) => {
+    switch (type) {
+      case 'fuel':
+        return (
+          <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+            <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+        );
+      case 'maintenance':
+        return (
+          <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
+            <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </div>
+        );
+      case 'roadtax':
+        return (
+          <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+            <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+        );
+      case 'insurance':
+        return (
+          <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+            <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const getActivityLabel = (type) => {
+    switch (type) {
+      case 'fuel': return 'Fuel';
+      case 'maintenance': return 'Maintenance';
+      case 'roadtax': return 'Road Tax';
+      case 'insurance': return 'Insurance';
+      default: return type;
+    }
+  };
+
+  const formatRelativeTime = (date) => {
+    const now = new Date();
+    const then = new Date(date);
+    const diffMs = now - then;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+    return `${Math.floor(diffDays / 365)} years ago`;
+  };
+
   return (
     <div className="max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex justify-between items-start mb-8">
+      <div className="flex justify-between items-start mb-6">
         <div>
           <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight" style={{ fontFamily: 'Syne, sans-serif' }}>
             Vehicles
@@ -160,30 +246,59 @@ export default function Vehicles() {
             {vehicles.length} vehicle{vehicles.length !== 1 ? 's' : ''} tracked
           </p>
         </div>
+        {activeTab === 'vehicles' && (
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className={showForm ? 'btn-secondary' : 'btn-primary'}
+          >
+            {showForm ? (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                <span>Cancel</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Add Vehicle</span>
+              </>
+            )}
+          </button>
+        )}
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 p-1 mb-6 bg-[var(--bg-secondary)] rounded-lg w-fit">
         <button
-          onClick={() => setShowForm(!showForm)}
-          className={showForm ? 'btn-secondary' : 'btn-primary'}
+          onClick={() => setActiveTab('vehicles')}
+          className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+            activeTab === 'vehicles'
+              ? 'bg-[var(--bg-primary)] text-[var(--text-primary)] shadow-sm'
+              : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+          }`}
         >
-          {showForm ? (
-            <>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              <span>Cancel</span>
-            </>
-          ) : (
-            <>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              <span>Add Vehicle</span>
-            </>
-          )}
+          Vehicles
+        </button>
+        <button
+          onClick={() => setActiveTab('activity')}
+          className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+            activeTab === 'activity'
+              ? 'bg-[var(--bg-primary)] text-[var(--text-primary)] shadow-sm'
+              : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+          }`}
+        >
+          Recent Activity
         </button>
       </div>
 
-      {/* Add Vehicle Form */}
-      {showForm && (
+      {/* Vehicles Tab Content */}
+      {activeTab === 'vehicles' && (
+        <>
+          {/* Add Vehicle Form */}
+          {showForm && (
         <div className="glass-card p-6 mb-8 animate-fade-in">
           <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6" style={{ fontFamily: 'Syne, sans-serif' }}>
             Add New Vehicle
@@ -515,6 +630,131 @@ export default function Vehicles() {
               </div>
             );
           })}
+        </div>
+      )}
+        </>
+      )}
+
+      {/* Recent Activity Tab Content */}
+      {activeTab === 'activity' && (
+        <div className="space-y-4">
+          {/* Filter buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActivityFilter(null)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                activityFilter === null
+                  ? 'bg-[var(--accent-primary)] text-white'
+                  : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setActivityFilter('fuel')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all flex items-center gap-1.5 ${
+                activityFilter === 'fuel'
+                  ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30'
+                  : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+              }`}
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Fuel
+            </button>
+            <button
+              onClick={() => setActivityFilter('maintenance')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all flex items-center gap-1.5 ${
+                activityFilter === 'maintenance'
+                  ? 'bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/30'
+                  : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+              }`}
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Maintenance
+            </button>
+          </div>
+
+          {/* Activity list */}
+          {activityLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="spinner mx-auto mb-4"></div>
+                <p className="text-[var(--text-muted)] text-sm">Loading activity...</p>
+              </div>
+            </div>
+          ) : recentActivity.length === 0 ? (
+            <div className="glass-card p-12 text-center">
+              <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-[var(--accent-subtle)] flex items-center justify-center">
+                <svg className="w-6 h-6 text-[var(--accent-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">No activity yet</h3>
+              <p className="text-[var(--text-muted)] text-sm">Start adding entries to your vehicles to see activity here.</p>
+            </div>
+          ) : (
+            <>
+              {recentActivity.map((activity, index) => (
+                <div
+                  key={`${activity.type}-${activity.id}`}
+                  className="glass-card p-4 animate-fade-in hover:border-[var(--border-hover)] transition-all"
+                  style={{ animationDelay: `${index * 20}ms` }}
+                >
+                  <div className="flex items-center gap-4">
+                    {/* Icon */}
+                    {getActivityIcon(activity.type)}
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[var(--bg-tertiary)] text-[var(--text-muted)]">
+                          {getActivityLabel(activity.type)}
+                        </span>
+                        <span className="text-xs text-[var(--text-muted)]">
+                          {formatRelativeTime(activity.createdAt)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-[var(--text-primary)] truncate">
+                        {activity.description}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        {activity.vehicle?.photo ? (
+                          <img src={activity.vehicle.photo} alt="" className="w-4 h-4 rounded object-cover" />
+                        ) : (
+                          <div className="w-4 h-4 rounded bg-[var(--bg-tertiary)] flex items-center justify-center">
+                            <svg className="w-2.5 h-2.5 text-[var(--text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                          </div>
+                        )}
+                        <Link
+                          to={`/vehicles/${activity.vehicle?.id}`}
+                          className="text-xs text-[var(--text-muted)] hover:text-[var(--accent-secondary)] transition-colors"
+                        >
+                          {activity.vehicle?.name || 'Unknown vehicle'}
+                        </Link>
+                      </div>
+                    </div>
+
+                    {/* Cost */}
+                    <div className="text-right">
+                      <span className="text-sm font-semibold text-[var(--text-primary)] tabular-nums">
+                        {formatCurrency(activity.cost)}
+                      </span>
+                      <p className="text-xs text-[var(--text-muted)]">
+                        {new Date(activity.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
         </div>
       )}
     </div>

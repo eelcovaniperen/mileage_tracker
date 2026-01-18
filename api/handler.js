@@ -433,6 +433,73 @@ async function handleRoadTaxEntryDelete(req, res, userId, id) {
   return res.json({ message: 'Road tax entry deleted' });
 }
 
+// ============ RECENT ACTIVITY HANDLER ============
+async function handleRecentActivity(req, res, userId) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  // Parse query params from URL
+  const urlParams = new URL(req.url, 'http://localhost').searchParams;
+  const limit = parseInt(urlParams.get('limit')) || 50;
+  const typeFilter = urlParams.get('type'); // 'fuel', 'maintenance', or null for all
+
+  // Get all vehicles for the user
+  const vehicles = await prisma.vehicle.findMany({
+    where: { userId },
+    select: { id: true, name: true, photo: true }
+  });
+
+  const vehicleMap = {};
+  vehicles.forEach(v => { vehicleMap[v.id] = v; });
+  const vehicleIds = vehicles.map(v => v.id);
+
+  // Fetch entries based on filter
+  const fuelEntries = (!typeFilter || typeFilter === 'fuel')
+    ? await prisma.fuelEntry.findMany({
+        where: { vehicleId: { in: vehicleIds } },
+        orderBy: { date: 'desc' },
+        take: limit
+      })
+    : [];
+
+  const maintenanceEntries = (!typeFilter || typeFilter === 'maintenance')
+    ? await prisma.maintenanceEntry.findMany({
+        where: { vehicleId: { in: vehicleIds } },
+        orderBy: { date: 'desc' },
+        take: limit
+      })
+    : [];
+
+  // Combine and format entries
+  const activities = [
+    ...fuelEntries.map(e => ({
+      id: e.id,
+      type: 'fuel',
+      date: e.date,
+      createdAt: e.createdAt,
+      cost: e.cost,
+      description: `${e.fuelAmount.toFixed(1)}L at ${e.gasStation || 'Unknown'}`,
+      details: { odometer: e.odometer, fuelAmount: e.fuelAmount, pricePerLiter: e.pricePerLiter },
+      vehicle: vehicleMap[e.vehicleId]
+    })),
+    ...maintenanceEntries.map(e => ({
+      id: e.id,
+      type: 'maintenance',
+      date: e.date,
+      createdAt: e.createdAt,
+      cost: e.cost,
+      description: e.description,
+      details: { category: e.category, odometer: e.odometer },
+      vehicle: vehicleMap[e.vehicleId]
+    }))
+  ];
+
+  // Sort by event date descending (most recent first)
+  activities.sort((a, b) => new Date(b.date) - new Date(a.date));
+  const limitedActivities = activities.slice(0, limit);
+
+  return res.json(limitedActivities);
+}
+
 // ============ INSURANCE ENTRIES HANDLERS ============
 async function handleInsuranceEntryCreate(req, res, userId) {
   const { vehicleId, startDate, endDate, cost, provider, policyNumber, coverage, notes } = req.body;
@@ -532,6 +599,11 @@ module.exports = async function handler(req, res) {
         error: 'Rate limit exceeded. Please slow down.',
         retryAfter: Math.ceil(apiRateLimit.resetIn / 1000)
       });
+    }
+
+    // Recent Activity
+    if (resource === 'recent-activity') {
+      if (req.method === 'GET') return handleRecentActivity(req, res, userId);
     }
 
     // Vehicles
