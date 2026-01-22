@@ -27,6 +27,29 @@ const COVERAGE_TYPES = [
   { value: 'full', label: 'Full Coverage' }
 ];
 
+// Calculate ownership duration
+function getOwnershipDuration(purchaseDate, soldDate) {
+  if (!purchaseDate) return null;
+
+  const start = new Date(purchaseDate);
+  const end = soldDate ? new Date(soldDate) : new Date();
+
+  let years = end.getFullYear() - start.getFullYear();
+  let months = end.getMonth() - start.getMonth();
+
+  if (months < 0) {
+    years--;
+    months += 12;
+  }
+
+  const parts = [];
+  if (years > 0) parts.push(`${years} ${years === 1 ? 'year' : 'years'}`);
+  if (months > 0) parts.push(`${months} ${months === 1 ? 'month' : 'months'}`);
+
+  if (parts.length === 0) return 'Less than a month';
+  return parts.join(', ');
+}
+
 export default function VehicleDetail() {
   const { id } = useParams();
   const [vehicle, setVehicle] = useState(null);
@@ -695,6 +718,11 @@ export default function VehicleDetail() {
             </div>
             <p className="text-[var(--text-muted)] text-sm">
               {[vehicle.make, vehicle.model, vehicle.year].filter(Boolean).join(' ') || 'No details'}
+              {vehicle.purchaseDate && (
+                <span className="ml-2 text-[var(--text-muted)]">
+                  · {getOwnershipDuration(vehicle.purchaseDate, vehicle.soldDate)} {vehicle.soldDate ? 'owned' : 'of ownership'}
+                </span>
+              )}
             </p>
           </div>
         </div>
