@@ -245,8 +245,8 @@ async function handleVehicleGet(req, res, userId, id) {
   // Total cost = ALL cost components (fuel + maintenance + depreciation + running costs)
   stats.totalCost = stats.totalFuelCost + stats.totalMaintenanceCost + stats.totalDepreciationToDate + stats.runningCosts;
 
-  // Net cost = total cost minus sale proceeds (if sold)
-  stats.netCost = vehicle.soldPrice ? stats.totalCost - vehicle.soldPrice : stats.totalCost;
+  // Net cost = total cost (depreciation already accounts for sale price)
+  stats.netCost = stats.totalCost;
 
   // Cost per km based on net cost
   stats.totalCostPerKm = stats.totalDistance > 0 ? stats.netCost / stats.totalDistance : 0;

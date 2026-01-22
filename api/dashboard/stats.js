@@ -115,8 +115,8 @@ module.exports = async function handler(req, res) {
       // Total cost = fuel + maintenance + depreciation + running costs
       const vehicleTotalCost = vehicleFuelCost + vehicleMaintenanceCost + vehicleDepreciation + vehicleRunningCosts;
 
-      // Net cost = total cost - sale proceeds
-      const vehicleNetCost = vehicle.soldPrice ? vehicleTotalCost - vehicle.soldPrice : vehicleTotalCost;
+      // Net cost = total cost (depreciation already accounts for sale price)
+      const vehicleNetCost = vehicleTotalCost;
 
       // Accumulate cost breakdown totals
       totalFuelCost += vehicleFuelCost;
