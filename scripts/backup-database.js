@@ -8,7 +8,10 @@ const prisma = new PrismaClient();
 async function backup() {
   console.log('Starting database backup...\n');
 
-  const backupDir = path.join(__dirname, '../backups');
+  const backupDir = process.env.BACKUP_DIR
+    || (process.env.USERPROFILE
+        ? path.join(process.env.USERPROFILE, 'OneDrive', 'Backups', 'mileage_tracker')
+        : path.join(__dirname, '../backups'));
   if (!fs.existsSync(backupDir)) {
     fs.mkdirSync(backupDir, { recursive: true });
   }
@@ -73,6 +76,16 @@ async function backup() {
     console.log(`Maintenance Entries: ${backup.stats.maintenanceEntries}`);
     console.log(`Road Tax Entries: ${backup.stats.roadTaxEntries}`);
     console.log(`Insurance Entries: ${backup.stats.insuranceEntries}`);
+
+    // Retention: keep the newest 30 daily dumps (60 files since each run writes 2)
+    const KEEP = 60;
+    const files = fs.readdirSync(backupDir)
+      .filter(f => /^backup(-full)?-.*\.json$/.test(f))
+      .map(f => ({ f, t: fs.statSync(path.join(backupDir, f)).mtimeMs }))
+      .sort((a, b) => a.t - b.t);
+    const stale = files.slice(0, Math.max(0, files.length - KEEP));
+    for (const { f } of stale) fs.unlinkSync(path.join(backupDir, f));
+    if (stale.length) console.log(`\nPruned ${stale.length} old backup file(s)`);
 
     return { success: true, file: backupFile, fullFile: fullBackupFile, stats: backup.stats };
   } catch (error) {

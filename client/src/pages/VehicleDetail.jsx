@@ -89,6 +89,7 @@ export default function VehicleDetail() {
     gasStation: '',
     tripDistance: '',
     pricePerLiter: '',
+    fuelType: 'Euro 95',
     tyres: ''
   });
 
@@ -214,6 +215,7 @@ export default function VehicleDetail() {
       gasStation: '',
       tripDistance: '',
       pricePerLiter: '',
+      fuelType: 'Euro 95',
       tyres: ''
     });
   };
@@ -230,6 +232,7 @@ export default function VehicleDetail() {
       gasStation: entry.gasStation || '',
       tripDistance: entry.tripDistance || '',
       pricePerLiter: entry.pricePerLiter || '',
+      fuelType: entry.fuelType || 'Euro 95',
       tyres: entry.tyres || ''
     });
     setShowForm(true);
@@ -263,6 +266,7 @@ export default function VehicleDetail() {
       gasStation: entry.gasStation || '',
       tripDistance: entry.tripDistance || '',
       pricePerLiter: entry.pricePerLiter || '',
+      fuelType: entry.fuelType || 'Euro 95',
       tyres: entry.tyres || ''
     });
     setEditingEntry(null);
@@ -966,6 +970,15 @@ export default function VehicleDetail() {
             <div><label className="input-label">Odometer (km)</label><input type="number" value={formData.odometer} onChange={(e) => setFormData({ ...formData, odometer: e.target.value })} className="input-field" required step="0.1" /></div>
             <div><label className="input-label">Fuel Amount (L)</label><input type="number" value={formData.fuelAmount} onChange={(e) => setFormData({ ...formData, fuelAmount: e.target.value })} className="input-field" required step="0.01" /></div>
             <div><label className="input-label">Cost (EUR)</label><input type="number" value={formData.cost} onChange={(e) => setFormData({ ...formData, cost: e.target.value })} className="input-field" required step="0.01" /></div>
+            <div>
+              <label className="input-label">Fuel Type</label>
+              <select value={formData.fuelType} onChange={(e) => setFormData({ ...formData, fuelType: e.target.value })} className="input-field" required>
+                <option value="Euro 95">Euro 95</option>
+                <option value="Euro 98">Euro 98</option>
+                <option value="Diesel">Diesel</option>
+                <option value="LPG">LPG</option>
+              </select>
+            </div>
             {!quickAddMode && (
               <>
                 <div><label className="input-label">Gas Station</label><input type="text" value={formData.gasStation} onChange={(e) => setFormData({ ...formData, gasStation: e.target.value })} className="input-field" /></div>
@@ -1087,12 +1100,12 @@ export default function VehicleDetail() {
                       onChange={toggleAllFuelSelection}
                     />
                   </th>
-                  <th>Date</th><th>Odometer</th><th>Trip</th><th>Fuel</th><th>Cost</th><th>km/L</th><th>Station</th><th>Price/L</th><th>Tyres</th><th></th>
+                  <th>Date</th><th>Odometer</th><th>Trip</th><th>Fuel</th><th>Type</th><th>Cost</th><th>km/L</th><th>Station</th><th>Price/L</th><th>Tyres</th><th></th>
                 </tr>
               </thead>
               <tbody>
                 {getFilteredFuelEntries().length === 0 ? (
-                  <tr><td colSpan="11" className="text-center py-12"><div className="text-[var(--text-muted)]"><p className="text-sm">{dateFilter.start || dateFilter.end ? 'No entries in this date range' : 'No fuel entries yet'}</p></div></td></tr>
+                  <tr><td colSpan="12" className="text-center py-12"><div className="text-[var(--text-muted)]"><p className="text-sm">{dateFilter.start || dateFilter.end ? 'No entries in this date range' : 'No fuel entries yet'}</p></div></td></tr>
                 ) : (
                   [...getFilteredFuelEntries()].reverse().map((entry, index, arr) => {
                     const prevEntry = arr[index + 1];
@@ -1116,6 +1129,7 @@ export default function VehicleDetail() {
                         <td>{entry.odometer.toLocaleString()} km</td>
                         <td className="text-[var(--text-muted)]">{entry.tripDistance ? `${entry.tripDistance.toFixed(1)} km` : '-'}</td>
                         <td>{entry.fuelAmount.toFixed(2)} L</td>
+                        <td className="text-[var(--text-muted)]">{entry.fuelType || '-'}</td>
                         <td>{entry.cost.toFixed(2)} EUR</td>
                         <td>{consumption ? <span className={consumption < 10 ? 'text-[var(--warning)]' : 'text-[var(--success)]'}>{consumption.toFixed(1)}</span> : <span className="text-[var(--text-muted)]">-</span>}</td>
                         <td className="text-[var(--text-muted)]">{entry.gasStation || '-'}</td>

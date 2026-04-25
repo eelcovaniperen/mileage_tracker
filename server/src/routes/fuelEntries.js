@@ -3,6 +3,8 @@ const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
 
+const FUEL_TYPES = ['Euro 95', 'Euro 98', 'Diesel', 'LPG'];
+
 // All routes require authentication
 router.use(authMiddleware);
 
@@ -36,10 +38,14 @@ router.get('/vehicle/:vehicleId', async (req, res) => {
 // Create fuel entry
 router.post('/', async (req, res) => {
   try {
-    const { vehicleId, date, odometer, fuelAmount, cost, fullTank, notes, gasStation, tripDistance, pricePerLiter, tyres } = req.body;
+    const { vehicleId, date, odometer, fuelAmount, cost, fullTank, notes, gasStation, tripDistance, pricePerLiter, fuelType, tyres } = req.body;
 
     if (!vehicleId || !date || !odometer || !fuelAmount || cost === undefined) {
       return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    if (!fuelType || !FUEL_TYPES.includes(fuelType)) {
+      return res.status(400).json({ error: `fuelType must be one of: ${FUEL_TYPES.join(', ')}` });
     }
 
     // Verify vehicle ownership
@@ -78,6 +84,7 @@ router.post('/', async (req, res) => {
         gasStation: gasStation || null,
         tripDistance: tripDistance ? parseFloat(tripDistance) : null,
         pricePerLiter: pricePerLiter ? parseFloat(pricePerLiter) : null,
+        fuelType,
         tyres: tyres || null
       }
     });
@@ -92,7 +99,11 @@ router.post('/', async (req, res) => {
 // Update fuel entry
 router.put('/:id', async (req, res) => {
   try {
-    const { date, odometer, fuelAmount, cost, fullTank, notes, gasStation, tripDistance, pricePerLiter, tyres } = req.body;
+    const { date, odometer, fuelAmount, cost, fullTank, notes, gasStation, tripDistance, pricePerLiter, fuelType, tyres } = req.body;
+
+    if (fuelType !== undefined && !FUEL_TYPES.includes(fuelType)) {
+      return res.status(400).json({ error: `fuelType must be one of: ${FUEL_TYPES.join(', ')}` });
+    }
 
     // Get entry and verify ownership through vehicle
     const existing = await req.prisma.fuelEntry.findUnique({
@@ -116,6 +127,7 @@ router.put('/:id', async (req, res) => {
         gasStation: gasStation !== undefined ? (gasStation || null) : undefined,
         tripDistance: tripDistance !== undefined ? (tripDistance ? parseFloat(tripDistance) : null) : undefined,
         pricePerLiter: pricePerLiter !== undefined ? (pricePerLiter ? parseFloat(pricePerLiter) : null) : undefined,
+        fuelType: fuelType !== undefined ? fuelType : undefined,
         tyres: tyres !== undefined ? (tyres || null) : undefined
       }
     });
