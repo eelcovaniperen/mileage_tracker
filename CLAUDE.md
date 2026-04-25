@@ -27,3 +27,15 @@ npx vercel --prod --yes
 - Backend: Vercel Serverless Functions
 - Database: Neon PostgreSQL with Prisma
 - Auth: JWT tokens
+
+## ⚠️ Dual API implementations — keep in sync
+
+There are TWO parallel API implementations and changes MUST be made to both:
+
+1. **`api/handler.js`** — the Vercel serverless function. This is what runs
+   in production (see `vercel.json` rewrites). Also `api/dashboard/stats.js`.
+2. **`server/src/routes/*.js`** — an Express server used only for local
+   development. Vite proxies `/api` → `http://localhost:3001` (this server).
+
+Production does NOT use the `server/` directory. If you only edit one side,
+local and prod will diverge silently. Always mirror route changes across both.

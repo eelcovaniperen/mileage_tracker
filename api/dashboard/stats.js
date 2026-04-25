@@ -1,3 +1,6 @@
+// PRODUCTION HANDLER — deployed by Vercel. The local-dev equivalent lives
+// in server/src/routes/dashboard.js. Keep the two in sync.
+
 const prisma = require('../../lib/prisma');
 const { verifyToken } = require('../../lib/auth');
 

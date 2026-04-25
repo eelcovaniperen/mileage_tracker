@@ -1,3 +1,6 @@
+// LOCAL-DEV ONLY — production routes live in api/handler.js. Mirror any
+// change here to that file or prod will diverge from local.
+
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');

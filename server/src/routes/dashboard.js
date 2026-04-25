@@ -1,3 +1,7 @@
+// LOCAL-DEV ONLY — production routes live in api/handler.js (and
+// api/dashboard/stats.js). Mirror any change here to those files or prod
+// will diverge from local.
+
 const express = require('express');
 const authMiddleware = require('../middleware/auth');
 

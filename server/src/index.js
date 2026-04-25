@@ -1,3 +1,13 @@
+// ============================================================================
+// LOCAL DEVELOPMENT ONLY — this Express server is NOT deployed to production.
+// Production uses the Vercel serverless handler at api/handler.js (see
+// vercel.json). The Vite dev server proxies /api → http://localhost:3001
+// (this server) for local work.
+//
+// ANY route change here MUST be mirrored in api/handler.js or production
+// will silently diverge from local behavior.
+// ============================================================================
+
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');

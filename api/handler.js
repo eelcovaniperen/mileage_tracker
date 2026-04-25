@@ -1,3 +1,13 @@
+// ============================================================================
+// PRODUCTION HANDLER — this file is what Vercel actually deploys.
+// vercel.json rewrites all /api/* routes to this single serverless function.
+//
+// There is a parallel Express implementation under server/src/routes/ used
+// only for local development (see vite.config.js proxy → localhost:3001).
+// ANY route change MUST be made in BOTH places or production will diverge
+// from local. Search for the matching handler in server/src/routes/*.js.
+// ============================================================================
+
 const bcrypt = require('bcryptjs');
 const prisma = require('../lib/prisma');
 const { generateToken, verifyToken } = require('../lib/auth');
