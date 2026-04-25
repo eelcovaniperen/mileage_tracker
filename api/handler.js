@@ -296,10 +296,15 @@ async function handleVehicleDelete(req, res, userId, id) {
 }
 
 // ============ FUEL ENTRIES HANDLERS ============
+const FUEL_TYPES = ['Euro 95', 'Euro 98', 'Diesel', 'LPG'];
+
 async function handleFuelEntryCreate(req, res, userId) {
-  const { vehicleId, date, odometer, fuelAmount, cost, fullTank, notes, gasStation, tripDistance, pricePerLiter, tyres } = req.body;
+  const { vehicleId, date, odometer, fuelAmount, cost, fullTank, notes, gasStation, tripDistance, pricePerLiter, fuelType, tyres } = req.body;
   if (!vehicleId || !date || !odometer || !fuelAmount || cost === undefined) {
     return res.status(400).json({ error: 'Missing required fields' });
+  }
+  if (!fuelType || !FUEL_TYPES.includes(fuelType)) {
+    return res.status(400).json({ error: `fuelType must be one of: ${FUEL_TYPES.join(', ')}` });
   }
 
   const vehicle = await prisma.vehicle.findFirst({ where: { id: vehicleId, userId } });
@@ -315,6 +320,7 @@ async function handleFuelEntryCreate(req, res, userId) {
       vehicleId, date: new Date(date), odometer: parseFloat(odometer), fuelAmount: parseFloat(fuelAmount),
       cost: parseFloat(cost), fullTank: fullTank !== false, notes, gasStation: gasStation || null,
       tripDistance: tripDistance ? parseFloat(tripDistance) : null, pricePerLiter: pricePerLiter ? parseFloat(pricePerLiter) : null,
+      fuelType,
       tyres: tyres || null
     }
   });
@@ -325,7 +331,10 @@ async function handleFuelEntryUpdate(req, res, userId, id) {
   const existing = await prisma.fuelEntry.findUnique({ where: { id }, include: { vehicle: true } });
   if (!existing || existing.vehicle.userId !== userId) return res.status(404).json({ error: 'Fuel entry not found' });
 
-  const { date, odometer, fuelAmount, cost, fullTank, notes, gasStation, tripDistance, pricePerLiter, tyres } = req.body;
+  const { date, odometer, fuelAmount, cost, fullTank, notes, gasStation, tripDistance, pricePerLiter, fuelType, tyres } = req.body;
+  if (fuelType !== undefined && !FUEL_TYPES.includes(fuelType)) {
+    return res.status(400).json({ error: `fuelType must be one of: ${FUEL_TYPES.join(', ')}` });
+  }
   const entry = await prisma.fuelEntry.update({
     where: { id },
     data: {
@@ -335,6 +344,7 @@ async function handleFuelEntryUpdate(req, res, userId, id) {
       gasStation: gasStation !== undefined ? (gasStation || null) : undefined,
       tripDistance: tripDistance !== undefined ? (tripDistance ? parseFloat(tripDistance) : null) : undefined,
       pricePerLiter: pricePerLiter !== undefined ? (pricePerLiter ? parseFloat(pricePerLiter) : null) : undefined,
+      fuelType: fuelType !== undefined ? fuelType : undefined,
       tyres: tyres !== undefined ? (tyres || null) : undefined
     }
   });
