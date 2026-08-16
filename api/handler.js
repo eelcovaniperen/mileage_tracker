@@ -3,6 +3,7 @@ const prisma = require('../lib/prisma');
 const { generateToken, verifyToken } = require('../lib/auth');
 const { checkAuthRateLimit, checkApiRateLimit, getClientIp } = require('../lib/rateLimit');
 const { validateEmail, validatePassword, sanitizeString } = require('../lib/validation');
+const { applyRecurringCatchUp } = require('../lib/recurringEntries');
 
 // Allowed origins for CORS
 const ALLOWED_ORIGINS = [
@@ -186,6 +187,8 @@ async function handleVehicleGet(req, res, userId, id) {
   });
 
   if (!vehicle) return res.status(404).json({ error: 'Vehicle not found' });
+
+  await applyRecurringCatchUp(prisma, vehicle);
 
   // Determine vehicle status
   const status = vehicle.soldDate ? 'inactive' : 'active';

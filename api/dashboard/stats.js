@@ -1,5 +1,6 @@
 const prisma = require('../../lib/prisma');
 const { verifyToken } = require('../../lib/auth');
+const { applyRecurringCatchUp } = require('../../lib/recurringEntries');
 
 // Allowed origins for CORS
 const ALLOWED_ORIGINS = [
@@ -81,6 +82,8 @@ module.exports = async function handler(req, res) {
     let totalDepreciationCost = 0;
 
     for (const vehicle of vehicles) {
+      await applyRecurringCatchUp(prisma, vehicle);
+
       const entries = vehicle.fuelEntries;
 
       // Calculate all cost components for this vehicle

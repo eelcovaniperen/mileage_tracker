@@ -968,8 +968,10 @@ export default function VehicleDetail() {
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div><label className="input-label">Date</label><input type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="input-field" required /></div>
             <div><label className="input-label">Odometer (km)</label><input type="number" value={formData.odometer} onChange={(e) => setFormData({ ...formData, odometer: e.target.value })} className="input-field" required step="0.1" /></div>
+            <div><label className="input-label">Trip Distance (km)</label><input type="number" value={formData.tripDistance} onChange={(e) => setFormData({ ...formData, tripDistance: e.target.value })} className="input-field" step="0.1" /></div>
             <div><label className="input-label">Fuel Amount (L)</label><input type="number" value={formData.fuelAmount} onChange={(e) => setFormData({ ...formData, fuelAmount: e.target.value })} className="input-field" required step="0.01" /></div>
             <div><label className="input-label">Cost (EUR)</label><input type="number" value={formData.cost} onChange={(e) => setFormData({ ...formData, cost: e.target.value })} className="input-field" required step="0.01" /></div>
+            <div><label className="input-label">Price/Liter</label><input type="number" value={formData.pricePerLiter} onChange={(e) => setFormData({ ...formData, pricePerLiter: e.target.value })} className="input-field" step="0.001" /></div>
             <div>
               <label className="input-label">Fuel Type</label>
               <select value={formData.fuelType} onChange={(e) => setFormData({ ...formData, fuelType: e.target.value })} className="input-field" required>
@@ -982,8 +984,6 @@ export default function VehicleDetail() {
             {!quickAddMode && (
               <>
                 <div><label className="input-label">Gas Station</label><input type="text" value={formData.gasStation} onChange={(e) => setFormData({ ...formData, gasStation: e.target.value })} className="input-field" /></div>
-                <div><label className="input-label">Trip Distance (km)</label><input type="number" value={formData.tripDistance} onChange={(e) => setFormData({ ...formData, tripDistance: e.target.value })} className="input-field" step="0.1" /></div>
-                <div><label className="input-label">Price/Liter</label><input type="number" value={formData.pricePerLiter} onChange={(e) => setFormData({ ...formData, pricePerLiter: e.target.value })} className="input-field" step="0.001" /></div>
                 <div><label className="input-label">Tyres</label><input type="text" value={formData.tyres} onChange={(e) => setFormData({ ...formData, tyres: e.target.value })} className="input-field" /></div>
                 <div className="md:col-span-2"><label className="input-label">Notes</label><input type="text" value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} className="input-field" /></div>
               </>

@@ -1,5 +1,6 @@
 const express = require('express');
 const authMiddleware = require('../middleware/auth');
+const { applyRecurringCatchUp } = require('../../../lib/recurringEntries');
 
 const router = express.Router();
 
@@ -13,9 +14,15 @@ router.get('/stats', async (req, res) => {
       include: {
         fuelEntries: {
           orderBy: { date: 'asc' }
-        }
+        },
+        roadTaxEntries: true,
+        insuranceEntries: true
       }
     });
+
+    for (const vehicle of vehicles) {
+      await applyRecurringCatchUp(req.prisma, vehicle);
+    }
 
     let totalDistance = 0;
     let totalFuel = 0;

@@ -5,7 +5,8 @@
   "scripts": {
     "postinstall": "prisma generate",
     "dev": "cd client && npm run dev",
-    "build": "cd client && npm run build"
+    "build": "cd client && npm run build",
+    "test": "node --test lib/recurringEntries.test.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
